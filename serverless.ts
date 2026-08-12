@@ -1,8 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "http";
-import { createApp } from "../server";
+import { createApp } from "./server";
 
-// A single Express app instance is reused across warm invocations of this
-// serverless function. The in-memory database lives in `server.ts`.
+// Source du handler serverless. Le fichier déployé est `api/index.js`,
+// un bundle CJS généré par `npm run build:api` (esbuild).
+// Vercel déploie `api/index.js` tel quel, sans transpilation TS.
+
 let appPromise: ReturnType<typeof createApp> | undefined;
 
 export default async function handler(

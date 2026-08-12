@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "tsx dev.ts",
-    "build": "vite build && esbuild start.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/start.cjs",
+    "build": "vite build && npm run build:server && npm run build:api",
+    "build:server": "esbuild start.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/start.cjs",
+    "build:api": "esbuild serverless.ts --bundle --platform=node --format=cjs --packages=external --outfile=api/index.js",
     "start": "node dist/start.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
