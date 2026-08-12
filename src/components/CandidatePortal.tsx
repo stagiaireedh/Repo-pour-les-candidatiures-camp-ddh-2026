@@ -828,30 +828,157 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
               <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">Vérifiez toutes les informations avant la soumission définitive.</p>
             </div>
 
-            {/* Summary Card */}
-            <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                  <span className="text-slate-500 font-bold block text-xs uppercase mb-1">Porteur-se de la mini-activité</span>
-                  <p className="font-extrabold text-slate-900 text-sm">{form.nom} {form.prenom}</p>
-                  <p className="text-slate-700 font-medium">{form.email} | {form.telephone}</p>
+            {/* Récapitulatif complet & éditable */}
+            <div className="space-y-5">
+              {/* 1. Identification */}
+              <section className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+                <h4 className="font-extrabold text-[#1F4E79] text-sm sm:text-base flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#1F4E79] text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                  Identification du/de la candidat-e
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Nom</label>
+                    <input type="text" value={form.nom} onChange={(e) => handleFieldChange('nom', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Prénom</label>
+                    <input type="text" value={form.prenom} onChange={(e) => handleFieldChange('prenom', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">E-mail</label>
+                    <input type="email" value={form.email} onChange={(e) => handleFieldChange('email', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Téléphone</label>
+                    <input type="text" value={form.telephone} onChange={(e) => handleFieldChange('telephone', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Département</label>
+                    <select value={form.departement} onChange={(e) => handleFieldChange('departement', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none">
+                      {DEPARTEMENTS.map(d => (<option key={d} value={d}>{d}</option>))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Commune / Localité</label>
+                    <input type="text" value={form.commune} onChange={(e) => handleFieldChange('commune', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
                 </div>
-                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                  <span className="text-slate-500 font-bold block text-xs uppercase mb-1">Département & Domaine</span>
-                  <p className="font-extrabold text-slate-900 text-sm">{form.departement} ({form.commune || 'Localité non saisie'})</p>
-                  <p className="text-[#1F4E79] font-bold">{form.domaine}</p>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Domaine d'intervention</label>
+                  <select value={form.domaine} onChange={(e) => handleFieldChange('domaine', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none">
+                    {DOMAINES.map(d => (<option key={d} value={d}>{d}</option>))}
+                  </select>
                 </div>
-              </div>
+              </section>
 
-              <div>
-                <span className="text-slate-500 font-bold block text-xs uppercase mb-1">Titre du projet</span>
-                <p className="font-bold text-slate-900 p-3 bg-white rounded-xl border border-slate-200">{form.titreProjet || 'Non renseigné'}</p>
-              </div>
+              {/* 2. Description */}
+              <section className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+                <h4 className="font-extrabold text-[#1F4E79] text-sm sm:text-base flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#1F4E79] text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                  Description de la mini-activité
+                </h4>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Titre du projet</label>
+                  <input type="text" value={form.titreProjet} onChange={(e) => handleFieldChange('titreProjet', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Problématique identifiée</label>
+                  <textarea rows={3} value={form.problematique} onChange={(e) => handleFieldChange('problematique', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Objectif général</label>
+                    <textarea rows={3} value={form.objectifGeneral} onChange={(e) => handleFieldChange('objectifGeneral', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Objectifs spécifiques</label>
+                    <textarea rows={3} value={form.objectifsSpecifiques} onChange={(e) => handleFieldChange('objectifsSpecifiques', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Résultats attendus</label>
+                  <textarea rows={2} value={form.resultatsAttendus} onChange={(e) => handleFieldChange('resultatsAttendus', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Bénéficiaires direct-e-s</label>
+                    <input type="text" value={form.beneficiairesDirects} onChange={(e) => handleFieldChange('beneficiairesDirects', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Bénéficiaires indirect-e-s</label>
+                    <input type="text" value={form.beneficiairesIndirects} onChange={(e) => handleFieldChange('beneficiairesIndirects', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Zone d'intervention</label>
+                  <input type="text" value={form.zoneIntervention} onChange={(e) => handleFieldChange('zoneIntervention', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+              </section>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
-                <span className="text-slate-700 font-extrabold text-xs sm:text-sm uppercase">Budget Total Calculé</span>
-                <p className="font-black text-[#7A0C10] text-lg sm:text-xl">{totalBudget.toLocaleString('fr-FR')} FCFA</p>
-              </div>
+              {/* 3. Méthodologie & Vision 2060 */}
+              <section className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+                <h4 className="font-extrabold text-[#1F4E79] text-sm sm:text-base flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#1F4E79] text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                  Méthodologie & Vision Bénin 2060
+                </h4>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Méthodologie de mise en œuvre</label>
+                  <textarea rows={3} value={form.methodologie} onChange={(e) => handleFieldChange('methodologie', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Chronogramme prévisionnel</label>
+                  <textarea rows={3} value={form.chronogramme} onChange={(e) => handleFieldChange('chronogramme', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Contribution à la Vision Bénin 2060</label>
+                  <textarea rows={3} value={form.lienVision2060} onChange={(e) => handleFieldChange('lienVision2060', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none" />
+                </div>
+              </section>
+
+              {/* 4. Budget */}
+              <section className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="font-extrabold text-[#1F4E79] text-sm sm:text-base flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#1F4E79] text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                    Budget prévisionnel
+                  </h4>
+                  <button type="button" onClick={handleAddBudgetItem} className="px-3 py-1.5 bg-[#1F4E79] hover:bg-[#163858] text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+                    <Plus className="w-3.5 h-3.5" /> Ajouter
+                  </button>
+                </div>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                      <tr className="bg-[#1F4E79] text-white text-xs uppercase font-extrabold">
+                        <th className="p-2.5">Désignation</th>
+                        <th className="p-2.5 w-24 text-center">Qté</th>
+                        <th className="p-2.5 w-32 text-right">Coût Unit</th>
+                        <th className="p-2.5 w-32 text-right">Total</th>
+                        <th className="p-2.5 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
+                      {form.budgetItems.map((item) => {
+                        const lineTotal = Number(item.quantite || 0) * Number(item.coutUnitaire || 0);
+                        return (
+                          <tr key={item.id}>
+                            <td className="p-2"><input type="text" value={item.designation} onChange={(e) => handleUpdateBudgetItem(item.id, 'designation', e.target.value)} className="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 font-medium focus:border-[#1F4E79] focus:outline-none" /></td>
+                            <td className="p-2 text-center"><input type="number" min="1" value={item.quantite} onChange={(e) => handleUpdateBudgetItem(item.id, 'quantite', parseInt(e.target.value) || 0)} className="w-full text-center px-2 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 font-bold focus:border-[#1F4E79] focus:outline-none" /></td>
+                            <td className="p-2 text-right"><input type="number" min="0" step="500" value={item.coutUnitaire} onChange={(e) => handleUpdateBudgetItem(item.id, 'coutUnitaire', parseInt(e.target.value) || 0)} className="w-full text-right px-2 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 font-bold focus:border-[#1F4E79] focus:outline-none" /></td>
+                            <td className="p-2 text-right font-extrabold text-slate-900">{lineTotal.toLocaleString('fr-FR')}</td>
+                            <td className="p-2 text-center">{form.budgetItems.length > 1 && (<button type="button" onClick={() => handleRemoveBudgetItem(item.id)} className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer" title="Supprimer"><Trash2 className="w-4 h-4" /></button>)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-700 font-extrabold text-xs sm:text-sm uppercase">Budget Total Calculé</span>
+                  <p className="font-black text-[#7A0C10] text-lg sm:text-xl">{totalBudget.toLocaleString('fr-FR')} FCFA</p>
+                </div>
+              </section>
             </div>
 
             {/* Declaration Checkbox */}
