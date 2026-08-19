@@ -288,24 +288,38 @@ async function loadFromStore(): Promise<void> {
       redis.get(KEY_TOKENS),
       redis.get(KEY_DOSSIERS),
     ]);
-    if (u || t || d) {
-      usersDB.clear();
-      tokensDB.clear();
-      dossiersDB.clear();
-      if (u) {
-        const parsed = JSON.parse(String(u)) as Record<string, UserAccount>;
+    if (u) {
+      const parsed = JSON.parse(String(u)) as Record<string, UserAccount>;
+      if (Object.keys(parsed).length > 0) {
+        usersDB.clear();
         for (const [k, v] of Object.entries(parsed)) usersDB.set(k, v);
       }
-      if (t) {
-        const parsed = JSON.parse(String(t)) as Record<string, string>;
+    }
+    if (t) {
+      const parsed = JSON.parse(String(t)) as Record<string, string>;
+      if (Object.keys(parsed).length > 0) {
+        tokensDB.clear();
         for (const [k, v] of Object.entries(parsed)) tokensDB.set(k, v);
       }
-      if (d) {
-        const parsed = JSON.parse(String(d)) as Record<string, DossierCandidature>;
+    }
+    if (d) {
+      const parsed = JSON.parse(String(d)) as Record<string, DossierCandidature>;
+      if (Object.keys(parsed).length > 0) {
+        dossiersDB.clear();
         for (const [k, v] of Object.entries(parsed)) dossiersDB.set(k, v);
       }
-    } else {
-      // Premier lancement avec Redis : on persiste les données de démo seedées.
+    }
+    // Filet de sécurité : le compte admin seed ne doit jamais disparaître.
+    let needsPersist = false;
+    if (!usersDB.has(initialAdmin.id)) {
+      usersDB.set(initialAdmin.id, initialAdmin);
+      needsPersist = true;
+    }
+    // Premier lancement (Redis vide) : initialise avec le seed.
+    if (!u && !t && !d) {
+      needsPersist = true;
+    }
+    if (needsPersist) {
       await persistToStore();
     }
   } catch (err) {

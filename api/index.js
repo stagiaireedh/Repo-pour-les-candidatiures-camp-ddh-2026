@@ -255,23 +255,36 @@ async function loadFromStore() {
       redis.get(KEY_TOKENS),
       redis.get(KEY_DOSSIERS)
     ]);
-    if (u || t || d) {
-      usersDB.clear();
-      tokensDB.clear();
-      dossiersDB.clear();
-      if (u) {
-        const parsed = JSON.parse(String(u));
+    if (u) {
+      const parsed = JSON.parse(String(u));
+      if (Object.keys(parsed).length > 0) {
+        usersDB.clear();
         for (const [k, v] of Object.entries(parsed)) usersDB.set(k, v);
       }
-      if (t) {
-        const parsed = JSON.parse(String(t));
+    }
+    if (t) {
+      const parsed = JSON.parse(String(t));
+      if (Object.keys(parsed).length > 0) {
+        tokensDB.clear();
         for (const [k, v] of Object.entries(parsed)) tokensDB.set(k, v);
       }
-      if (d) {
-        const parsed = JSON.parse(String(d));
+    }
+    if (d) {
+      const parsed = JSON.parse(String(d));
+      if (Object.keys(parsed).length > 0) {
+        dossiersDB.clear();
         for (const [k, v] of Object.entries(parsed)) dossiersDB.set(k, v);
       }
-    } else {
+    }
+    let needsPersist = false;
+    if (!usersDB.has(initialAdmin.id)) {
+      usersDB.set(initialAdmin.id, initialAdmin);
+      needsPersist = true;
+    }
+    if (!u && !t && !d) {
+      needsPersist = true;
+    }
+    if (needsPersist) {
       await persistToStore();
     }
   } catch (err) {
