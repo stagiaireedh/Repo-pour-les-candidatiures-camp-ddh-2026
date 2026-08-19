@@ -1,4 +1,5 @@
 import express, { Express, Request, Response, NextFunction } from "express";
+import { Redis } from "@upstash/redis";
 
 interface BudgetItem {
   id: string;
@@ -262,6 +263,70 @@ const initialDossiers: DossierCandidature[] = [
 
 initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
 
+// --- Persistance (Upstash Redis) avec repli en mémoire ---
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+const redis = REDIS_URL && REDIS_TOKEN
+  ? new Redis({ url: REDIS_URL, token: REDIS_TOKEN })
+  : null;
+
+const KEY_USERS = "csb:users";
+const KEY_TOKENS = "csb:tokens";
+const KEY_DOSSIERS = "csb:dossiers";
+
+let storeLoaded = false;
+
+async function loadFromStore(): Promise<void> {
+  if (storeLoaded || !redis) {
+    storeLoaded = true;
+    return;
+  }
+  try {
+    const [u, t, d] = await Promise.all([
+      redis.get(KEY_USERS),
+      redis.get(KEY_TOKENS),
+      redis.get(KEY_DOSSIERS),
+    ]);
+    if (u || t || d) {
+      usersDB.clear();
+      tokensDB.clear();
+      dossiersDB.clear();
+      if (u) {
+        const parsed = JSON.parse(String(u)) as Record<string, UserAccount>;
+        for (const [k, v] of Object.entries(parsed)) usersDB.set(k, v);
+      }
+      if (t) {
+        const parsed = JSON.parse(String(t)) as Record<string, string>;
+        for (const [k, v] of Object.entries(parsed)) tokensDB.set(k, v);
+      }
+      if (d) {
+        const parsed = JSON.parse(String(d)) as Record<string, DossierCandidature>;
+        for (const [k, v] of Object.entries(parsed)) dossiersDB.set(k, v);
+      }
+    } else {
+      // Premier lancement avec Redis : on persiste les données de démo seedées.
+      await persistToStore();
+    }
+  } catch (err) {
+    console.error("[persistence] échec de chargement, repli en mémoire :", err);
+  }
+  storeLoaded = true;
+}
+
+async function persistToStore(): Promise<void> {
+  if (!redis) return;
+  try {
+    await Promise.all([
+      redis.set(KEY_USERS, JSON.stringify(Object.fromEntries(usersDB))),
+      redis.set(KEY_TOKENS, JSON.stringify(Object.fromEntries(tokensDB))),
+      redis.set(KEY_DOSSIERS, JSON.stringify(Object.fromEntries(dossiersDB))),
+    ]);
+  } catch (err) {
+    console.error("[persistence] échec de sauvegarde :", err);
+  }
+}
+
 // Helper: Token Generator
 function generateToken(userId: string): string {
   const token = `csb_${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -310,13 +375,19 @@ export async function createApp(): Promise<Express> {
 
   app.use(express.json({ limit: "10mb" }));
 
+  // Charger les données persistées (Redis) ou seed en mémoire au premier appel
+  app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+    await loadFromStore();
+    next();
+  });
+
   // API HEALTH CHECK
   app.get("/api/health", (_req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // --- CANDIDATE AUTHENTICATION ---
-  app.post("/api/auth/register-candidate", (req: Request, res: Response) => {
+  app.post("/api/auth/register-candidate", async (req: Request, res: Response) => {
     const { nom, prenom, email, telephone, departement, password } = req.body;
     if (!nom || !prenom || !email || !telephone) {
       res.status(400).json({ error: "Tous les champs obligatoires doivent être renseignés." });
@@ -350,10 +421,11 @@ export async function createApp(): Promise<Express> {
 
     const token = generateToken(user.id);
     const { passwordHash: _, ...safeUser } = user;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
 
-  app.post("/api/auth/login-candidate", (req: Request, res: Response) => {
+  app.post("/api/auth/login-candidate", async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email) {
       res.status(400).json({ error: "Veuillez saisir votre adresse e-mail." });
@@ -382,11 +454,12 @@ export async function createApp(): Promise<Express> {
 
     const token = generateToken(user.id);
     const { passwordHash: _, ...safeUser } = user;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
 
   // --- ADMINISTRATOR AUTHENTICATION (Allows multiple admins/evaluators to register & login) ---
-  app.post("/api/auth/register-admin", (req: Request, res: Response) => {
+  app.post("/api/auth/register-admin", async (req: Request, res: Response) => {
     const { nom, prenom, email, telephone, departement, password, inviteCode } = req.body;
     if (!nom || !prenom || !email || !password) {
       res.status(400).json({ error: "Nom, prénom, e-mail et mot de passe sont requis." });
@@ -423,10 +496,11 @@ export async function createApp(): Promise<Express> {
     usersDB.set(newAdmin.id, newAdmin);
     const token = generateToken(newAdmin.id);
     const { passwordHash: _, ...safeUser } = newAdmin;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
 
-  app.post("/api/auth/login-admin", (req: Request, res: Response) => {
+  app.post("/api/auth/login-admin", async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) {
       res.status(400).json({ error: "Identifiant e-mail et mot de passe administrateur requis." });
@@ -450,6 +524,7 @@ export async function createApp(): Promise<Express> {
 
     const token = generateToken(adminUser.id);
     const { passwordHash: _, ...safeUser } = adminUser;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
 
@@ -470,7 +545,7 @@ export async function createApp(): Promise<Express> {
     res.json({ dossier: dossier || null });
   });
 
-  app.post("/api/candidature/save-draft", authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/candidature/save-draft", authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
     const { form } = req.body;
     if (!form) {
@@ -502,10 +577,11 @@ export async function createApp(): Promise<Express> {
       dossiersDB.set(dossier.id, dossier);
     }
 
+    await persistToStore();
     res.json({ success: true, dossier });
   });
 
-  app.post("/api/candidature/submit", authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/candidature/submit", authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
     const { form } = req.body;
     if (!form) {
@@ -536,6 +612,7 @@ export async function createApp(): Promise<Express> {
       dossiersDB.set(dossier.id, dossier);
     }
 
+    await persistToStore();
     res.json({ success: true, dossier });
   });
 
@@ -545,19 +622,21 @@ export async function createApp(): Promise<Express> {
     res.json({ dossiers: all });
   });
 
-  app.delete("/api/admin/dossiers/:id", adminMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const exists = dossiersDB.has(id);
     if (!exists) {
       return res.status(404).json({ error: "Dossier introuvable." });
     }
     dossiersDB.delete(id);
+    await persistToStore();
     res.json({ success: true, message: "Dossier supprimé avec succès." });
   });
 
-  app.post("/api/admin/reset", adminMiddleware, (_req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/admin/reset", adminMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
     dossiersDB.clear();
     initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
+    await persistToStore();
     res.json({ success: true, message: "Dossiers réinitialisés avec succès." });
   });
 

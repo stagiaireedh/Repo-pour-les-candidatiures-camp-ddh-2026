@@ -35,6 +35,7 @@ module.exports = __toCommonJS(serverless_exports);
 
 // server.ts
 var import_express = __toESM(require("express"));
+var import_redis = require("@upstash/redis");
 var ADMIN_INVITE_CODE = "CSB-ADMIN-2026";
 var usersDB = /* @__PURE__ */ new Map();
 var tokensDB = /* @__PURE__ */ new Map();
@@ -236,6 +237,60 @@ var initialDossiers = [
   }
 ];
 initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
+var REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+var REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+var redis = REDIS_URL && REDIS_TOKEN ? new import_redis.Redis({ url: REDIS_URL, token: REDIS_TOKEN }) : null;
+var KEY_USERS = "csb:users";
+var KEY_TOKENS = "csb:tokens";
+var KEY_DOSSIERS = "csb:dossiers";
+var storeLoaded = false;
+async function loadFromStore() {
+  if (storeLoaded || !redis) {
+    storeLoaded = true;
+    return;
+  }
+  try {
+    const [u, t, d] = await Promise.all([
+      redis.get(KEY_USERS),
+      redis.get(KEY_TOKENS),
+      redis.get(KEY_DOSSIERS)
+    ]);
+    if (u || t || d) {
+      usersDB.clear();
+      tokensDB.clear();
+      dossiersDB.clear();
+      if (u) {
+        const parsed = JSON.parse(String(u));
+        for (const [k, v] of Object.entries(parsed)) usersDB.set(k, v);
+      }
+      if (t) {
+        const parsed = JSON.parse(String(t));
+        for (const [k, v] of Object.entries(parsed)) tokensDB.set(k, v);
+      }
+      if (d) {
+        const parsed = JSON.parse(String(d));
+        for (const [k, v] of Object.entries(parsed)) dossiersDB.set(k, v);
+      }
+    } else {
+      await persistToStore();
+    }
+  } catch (err) {
+    console.error("[persistence] \xE9chec de chargement, repli en m\xE9moire :", err);
+  }
+  storeLoaded = true;
+}
+async function persistToStore() {
+  if (!redis) return;
+  try {
+    await Promise.all([
+      redis.set(KEY_USERS, JSON.stringify(Object.fromEntries(usersDB))),
+      redis.set(KEY_TOKENS, JSON.stringify(Object.fromEntries(tokensDB))),
+      redis.set(KEY_DOSSIERS, JSON.stringify(Object.fromEntries(dossiersDB)))
+    ]);
+  } catch (err) {
+    console.error("[persistence] \xE9chec de sauvegarde :", err);
+  }
+}
 function generateToken(userId) {
   const token = `csb_${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   tokensDB.set(token, userId);
@@ -273,10 +328,14 @@ function adminMiddleware(req, res, next) {
 async function createApp() {
   const app = (0, import_express.default)();
   app.use(import_express.default.json({ limit: "10mb" }));
+  app.use(async (_req, _res, next) => {
+    await loadFromStore();
+    next();
+  });
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   });
-  app.post("/api/auth/register-candidate", (req, res) => {
+  app.post("/api/auth/register-candidate", async (req, res) => {
     const { nom, prenom, email, telephone, departement, password } = req.body;
     if (!nom || !prenom || !email || !telephone) {
       res.status(400).json({ error: "Tous les champs obligatoires doivent \xEAtre renseign\xE9s." });
@@ -306,9 +365,10 @@ async function createApp() {
     }
     const token = generateToken(user.id);
     const { passwordHash: _, ...safeUser } = user;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
-  app.post("/api/auth/login-candidate", (req, res) => {
+  app.post("/api/auth/login-candidate", async (req, res) => {
     const { email, password } = req.body;
     if (!email) {
       res.status(400).json({ error: "Veuillez saisir votre adresse e-mail." });
@@ -332,9 +392,10 @@ async function createApp() {
     }
     const token = generateToken(user.id);
     const { passwordHash: _, ...safeUser } = user;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
-  app.post("/api/auth/register-admin", (req, res) => {
+  app.post("/api/auth/register-admin", async (req, res) => {
     const { nom, prenom, email, telephone, departement, password, inviteCode } = req.body;
     if (!nom || !prenom || !email || !password) {
       res.status(400).json({ error: "Nom, pr\xE9nom, e-mail et mot de passe sont requis." });
@@ -366,9 +427,10 @@ async function createApp() {
     usersDB.set(newAdmin.id, newAdmin);
     const token = generateToken(newAdmin.id);
     const { passwordHash: _, ...safeUser } = newAdmin;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
-  app.post("/api/auth/login-admin", (req, res) => {
+  app.post("/api/auth/login-admin", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
       res.status(400).json({ error: "Identifiant e-mail et mot de passe administrateur requis." });
@@ -388,6 +450,7 @@ async function createApp() {
     }
     const token = generateToken(adminUser.id);
     const { passwordHash: _, ...safeUser } = adminUser;
+    await persistToStore();
     res.json({ success: true, token, user: safeUser });
   });
   app.get("/api/auth/me", authMiddleware, (req, res) => {
@@ -403,7 +466,7 @@ async function createApp() {
     const dossier = Array.from(dossiersDB.values()).find((d) => d.userId === userId);
     res.json({ dossier: dossier || null });
   });
-  app.post("/api/candidature/save-draft", authMiddleware, (req, res) => {
+  app.post("/api/candidature/save-draft", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { form } = req.body;
     if (!form) {
@@ -432,9 +495,10 @@ async function createApp() {
       };
       dossiersDB.set(dossier.id, dossier);
     }
+    await persistToStore();
     res.json({ success: true, dossier });
   });
-  app.post("/api/candidature/submit", authMiddleware, (req, res) => {
+  app.post("/api/candidature/submit", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { form } = req.body;
     if (!form) {
@@ -462,24 +526,27 @@ async function createApp() {
       };
       dossiersDB.set(dossier.id, dossier);
     }
+    await persistToStore();
     res.json({ success: true, dossier });
   });
   app.get("/api/admin/dossiers", adminMiddleware, (_req, res) => {
     const all = Array.from(dossiersDB.values());
     res.json({ dossiers: all });
   });
-  app.delete("/api/admin/dossiers/:id", adminMiddleware, (req, res) => {
+  app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req, res) => {
     const { id } = req.params;
     const exists = dossiersDB.has(id);
     if (!exists) {
       return res.status(404).json({ error: "Dossier introuvable." });
     }
     dossiersDB.delete(id);
+    await persistToStore();
     res.json({ success: true, message: "Dossier supprim\xE9 avec succ\xE8s." });
   });
-  app.post("/api/admin/reset", adminMiddleware, (_req, res) => {
+  app.post("/api/admin/reset", adminMiddleware, async (_req, res) => {
     dossiersDB.clear();
     initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
+    await persistToStore();
     res.json({ success: true, message: "Dossiers r\xE9initialis\xE9s avec succ\xE8s." });
   });
   return app;
