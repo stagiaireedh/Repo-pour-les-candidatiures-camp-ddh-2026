@@ -275,13 +275,9 @@ const KEY_USERS = "csb:users";
 const KEY_TOKENS = "csb:tokens";
 const KEY_DOSSIERS = "csb:dossiers";
 
-let storeLoaded = false;
-
 async function loadFromStore(): Promise<void> {
-  if (storeLoaded || !redis) {
-    storeLoaded = true;
-    return;
-  }
+  // Mode mémoire (sans Redis) : le seed est déjà en place, rien à recharger.
+  if (!redis) return;
   try {
     const [u, t, d] = await Promise.all([
       redis.get(KEY_USERS),
@@ -325,7 +321,6 @@ async function loadFromStore(): Promise<void> {
   } catch (err) {
     console.error("[persistence] échec de chargement, repli en mémoire :", err);
   }
-  storeLoaded = true;
 }
 
 async function persistToStore(): Promise<void> {
@@ -446,24 +441,11 @@ export async function createApp(): Promise<Express> {
       return;
     }
     const emailNorm = String(email).trim().toLowerCase();
-    let user = Array.from(usersDB.values()).find((u) => u.email.toLowerCase() === emailNorm && u.role === "candidat");
+    const user = Array.from(usersDB.values()).find((u) => u.email.toLowerCase() === emailNorm && u.role === "candidat");
 
     if (!user) {
-      // Auto-create candidate account for smooth experience
-      user = {
-        id: `candidat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        nom: "Candidat-e",
-        prenom: "Jeune",
-        email: emailNorm,
-        telephone: "+229 01 00 00 00",
-        departement: "Littoral",
-        role: "candidat",
-        passwordHash: password || "candidat2026"
-      };
-      usersDB.set(user.id, user);
-    } else if (password && user.passwordHash && user.passwordHash !== password) {
-      // If password provided and mismatch
-      // For friendly user testing allow login or enforce password
+      res.status(401).json({ error: "Compte candidat introuvable. Vérifiez votre adresse e-mail ou créez un compte." });
+      return;
     }
 
     const token = generateToken(user.id);

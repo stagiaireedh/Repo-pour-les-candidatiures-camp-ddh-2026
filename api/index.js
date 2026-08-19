@@ -243,12 +243,8 @@ var redis = REDIS_URL && REDIS_TOKEN ? new import_redis.Redis({ url: REDIS_URL, 
 var KEY_USERS = "csb:users";
 var KEY_TOKENS = "csb:tokens";
 var KEY_DOSSIERS = "csb:dossiers";
-var storeLoaded = false;
 async function loadFromStore() {
-  if (storeLoaded || !redis) {
-    storeLoaded = true;
-    return;
-  }
+  if (!redis) return;
   try {
     const [u, t, d] = await Promise.all([
       redis.get(KEY_USERS),
@@ -290,7 +286,6 @@ async function loadFromStore() {
   } catch (err) {
     console.error("[persistence] \xE9chec de chargement, repli en m\xE9moire :", err);
   }
-  storeLoaded = true;
 }
 async function persistToStore() {
   if (!redis) return;
@@ -388,20 +383,10 @@ async function createApp() {
       return;
     }
     const emailNorm = String(email).trim().toLowerCase();
-    let user = Array.from(usersDB.values()).find((u) => u.email.toLowerCase() === emailNorm && u.role === "candidat");
+    const user = Array.from(usersDB.values()).find((u) => u.email.toLowerCase() === emailNorm && u.role === "candidat");
     if (!user) {
-      user = {
-        id: `candidat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        nom: "Candidat-e",
-        prenom: "Jeune",
-        email: emailNorm,
-        telephone: "+229 01 00 00 00",
-        departement: "Littoral",
-        role: "candidat",
-        passwordHash: password || "candidat2026"
-      };
-      usersDB.set(user.id, user);
-    } else if (password && user.passwordHash && user.passwordHash !== password) {
+      res.status(401).json({ error: "Compte candidat introuvable. V\xE9rifiez votre adresse e-mail ou cr\xE9ez un compte." });
+      return;
     }
     const token = generateToken(user.id);
     const { passwordHash: _, ...safeUser } = user;
