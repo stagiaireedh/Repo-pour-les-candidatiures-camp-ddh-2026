@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DossierCandidature, DepartementBenin, UserAccount } from '../types';
 import { apiLoginAdmin, apiRegisterAdmin, apiGetAdminDossiers, apiDeleteAdminDossier, apiResetAdminDossiers, clearStoredTokens } from '../utils/api';
-import { getAllDossiers, deleteDossier, deleteDossierByUserId } from '../utils/storage';
+import { deleteDossier, deleteDossierByUserId } from '../utils/storage';
 import { generateSingleDossierPdf, generateGlobalListPdf } from '../utils/pdfGenerator';
 import { 
   Lock, 
@@ -79,34 +79,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Email Copy feedback
   const [copiedEmails, setCopiedEmails] = useState(false);
 
-  // Fetch dossiers when authenticated
+  // Fetch dossiers when authenticated (source de vérité : le serveur/Redis)
   const loadDossiers = async () => {
     setIsLoadingDossiers(true);
     setDataError('');
     try {
       const serverDossiers = await apiGetAdminDossiers();
-      const localDossiers = getAllDossiers();
-      
-      // Merge unique dossiers by ID or userId
-      const mergedMap = new Map<string, DossierCandidature>();
-      serverDossiers.forEach(d => mergedMap.set(d.id, d));
-      localDossiers.forEach(d => {
-        const existing = mergedMap.get(d.id);
-        if (!existing || d.statut === 'soumis') {
-          mergedMap.set(d.id, d);
-        }
-      });
-
-      setDossiers(Array.from(mergedMap.values()));
+      setDossiers(serverDossiers);
     } catch (err: any) {
       console.error(err);
-      // Fallback to local storage
-      const localDossiers = getAllDossiers();
-      if (localDossiers.length > 0) {
-        setDossiers(localDossiers);
-      } else {
-        setDataError(err.message || 'Impossible de charger les dossiers.');
-      }
+      setDataError(err.message || 'Impossible de charger les dossiers.');
     } finally {
       setIsLoadingDossiers(false);
     }

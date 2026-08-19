@@ -548,13 +548,14 @@ async function createApp() {
   });
   app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req, res) => {
     const { id } = req.params;
-    const exists = dossiersDB.has(id);
-    if (!exists) {
-      return res.status(404).json({ error: "Dossier introuvable." });
-    }
+    const existed = dossiersDB.has(id);
     dossiersDB.delete(id);
     await persistToStore();
-    res.json({ success: true, message: "Dossier supprim\xE9 avec succ\xE8s." });
+    res.json({
+      success: true,
+      existed,
+      message: existed ? "Dossier supprim\xE9 avec succ\xE8s." : "Dossier d\xE9j\xE0 absent (aucun effet)."
+    });
   });
   app.post("/api/admin/reset", adminMiddleware, async (_req, res) => {
     dossiersDB.clear();

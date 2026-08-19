@@ -638,13 +638,14 @@ export async function createApp(): Promise<Express> {
 
   app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const exists = dossiersDB.has(id);
-    if (!exists) {
-      return res.status(404).json({ error: "Dossier introuvable." });
-    }
+    const existed = dossiersDB.has(id);
     dossiersDB.delete(id);
     await persistToStore();
-    res.json({ success: true, message: "Dossier supprimé avec succès." });
+    res.json({
+      success: true,
+      existed,
+      message: existed ? "Dossier supprimé avec succès." : "Dossier déjà absent (aucun effet)."
+    });
   });
 
   app.post("/api/admin/reset", adminMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
