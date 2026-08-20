@@ -243,6 +243,7 @@ var redis = REDIS_URL && REDIS_TOKEN ? new import_redis.Redis({ url: REDIS_URL, 
 var KEY_USERS = "csb:users";
 var KEY_TOKENS = "csb:tokens";
 var KEY_DOSSIERS = "csb:dossiers";
+var SEEDED_KEY = "csb:seeded";
 function parseRedisData(raw) {
   if (raw == null) return null;
   if (typeof raw === "object") return raw;
@@ -255,13 +256,16 @@ function parseRedisData(raw) {
   }
   return null;
 }
+var storeLoaded = false;
 async function loadFromStore() {
-  if (!redis) return;
+  if (!redis || storeLoaded) return;
+  storeLoaded = true;
   try {
-    const [u, t, d] = await Promise.all([
+    const [u, t, d, seeded] = await Promise.all([
       redis.get(KEY_USERS),
       redis.get(KEY_TOKENS),
-      redis.get(KEY_DOSSIERS)
+      redis.get(KEY_DOSSIERS),
+      redis.get(SEEDED_KEY)
     ]);
     const usersData = parseRedisData(u);
     if (usersData && Object.keys(usersData).length > 0) {
@@ -278,13 +282,22 @@ async function loadFromStore() {
       dossiersDB.clear();
       for (const [k, v] of Object.entries(dossiersData)) dossiersDB.set(k, v);
     }
-    let needsPersist = false;
-    if (!usersDB.has(initialAdmin.id)) {
-      usersDB.set(initialAdmin.id, initialAdmin);
-      needsPersist = true;
+    if (!seeded) {
+      let needsPersist = false;
+      if (!usersDB.has(initialAdmin.id)) {
+        usersDB.set(initialAdmin.id, initialAdmin);
+        needsPersist = true;
+      }
+      if (usersDB.size <= 1 && dossiersDB.size === 0) {
+        for (const c of initialCandidates) usersDB.set(c.id, c);
+        for (const d2 of initialDossiers) dossiersDB.set(d2.id, d2);
+        needsPersist = true;
+      }
+      if (needsPersist) {
+        await persistToStore();
+        await redis.set(SEEDED_KEY, "1");
+      }
     }
-    if (!u && !t && !d) needsPersist = true;
-    if (needsPersist) await persistToStore();
   } catch (err) {
     console.error("[persistence] \xE9chec, repli m\xE9moire :", err);
   }
@@ -549,6 +562,32 @@ async function createApp() {
     initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
     await persistToStore();
     res.json({ success: true, message: "Dossiers r\xE9initialis\xE9s avec succ\xE8s." });
+  });
+  app.get("/api/admin/backup", adminMiddleware, async (_req, res) => {
+    const backup = {
+      users: Array.from(usersDB.values()),
+      tokens: Object.fromEntries(tokensDB),
+      dossiers: Array.from(dossiersDB.values()),
+      date: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    res.json(backup);
+  });
+  app.post("/api/admin/restore", adminMiddleware, async (req, res) => {
+    const { users, tokens, dossiers } = req.body;
+    if (users) {
+      usersDB.clear();
+      for (const u of users) usersDB.set(u.id, u);
+    }
+    if (tokens) {
+      tokensDB.clear();
+      for (const [k, v] of Object.entries(tokens)) tokensDB.set(k, v);
+    }
+    if (dossiers) {
+      dossiersDB.clear();
+      for (const d of dossiers) dossiersDB.set(d.id, d);
+    }
+    await persistToStore();
+    res.json({ success: true, message: "Restauration effectu\xE9e avec succ\xE8s." });
   });
   return app;
 }

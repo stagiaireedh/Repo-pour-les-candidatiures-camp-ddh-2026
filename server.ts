@@ -274,6 +274,7 @@ const redis = REDIS_URL && REDIS_TOKEN
 const KEY_USERS = "csb:users";
 const KEY_TOKENS = "csb:tokens";
 const KEY_DOSSIERS = "csb:dossiers";
+const SEEDED_KEY = "csb:seeded";
 
 function parseRedisData<T>(raw: unknown): T | null {
   if (raw == null) return null;
@@ -284,13 +285,17 @@ function parseRedisData<T>(raw: unknown): T | null {
   return null;
 }
 
+let storeLoaded = false;
+
 async function loadFromStore(): Promise<void> {
-  if (!redis) return;
+  if (!redis || storeLoaded) return;
+  storeLoaded = true;
   try {
-    const [u, t, d] = await Promise.all([
+    const [u, t, d, seeded] = await Promise.all([
       redis.get(KEY_USERS),
       redis.get(KEY_TOKENS),
       redis.get(KEY_DOSSIERS),
+      redis.get(SEEDED_KEY),
     ]);
     const usersData = parseRedisData<Record<string, UserAccount>>(u);
     if (usersData && Object.keys(usersData).length > 0) {
@@ -307,11 +312,21 @@ async function loadFromStore(): Promise<void> {
       dossiersDB.clear();
       for (const [k, v] of Object.entries(dossiersData)) dossiersDB.set(k, v);
     }
-    // Seed admin filet + premier lancement Redis vide
-    let needsPersist = false;
-    if (!usersDB.has(initialAdmin.id)) { usersDB.set(initialAdmin.id, initialAdmin); needsPersist = true; }
-    if (!u && !t && !d) needsPersist = true;
-    if (needsPersist) await persistToStore();
+    // Ne reseeder QUE si le flag csb:seeded n'existe JAMAIS dans Redis.
+    // Après le premier seed, ce flag persiste et protège les vraies données.
+    if (!seeded) {
+      let needsPersist = false;
+      if (!usersDB.has(initialAdmin.id)) { usersDB.set(initialAdmin.id, initialAdmin); needsPersist = true; }
+      if (usersDB.size <= 1 && dossiersDB.size === 0) {
+        for (const c of initialCandidates) usersDB.set(c.id, c);
+        for (const d2 of initialDossiers) dossiersDB.set(d2.id, d2);
+        needsPersist = true;
+      }
+      if (needsPersist) {
+        await persistToStore();
+        await redis.set(SEEDED_KEY, "1");
+      }
+    }
   } catch (err) {
     console.error("[persistence] échec, repli mémoire :", err);
   }
@@ -629,6 +644,35 @@ export async function createApp(): Promise<Express> {
     initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
     await persistToStore();
     res.json({ success: true, message: "Dossiers réinitialisés avec succès." });
+  });
+
+  // --- BACKUP & RESTORE ---
+  app.get("/api/admin/backup", adminMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
+    const backup = {
+      users: Array.from(usersDB.values()),
+      tokens: Object.fromEntries(tokensDB),
+      dossiers: Array.from(dossiersDB.values()),
+      date: new Date().toISOString(),
+    };
+    res.json(backup);
+  });
+
+  app.post("/api/admin/restore", adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    const { users, tokens, dossiers } = req.body;
+    if (users) {
+      usersDB.clear();
+      for (const u of users as UserAccount[]) usersDB.set(u.id, u);
+    }
+    if (tokens) {
+      tokensDB.clear();
+      for (const [k, v] of Object.entries(tokens as Record<string, string>)) tokensDB.set(k, v);
+    }
+    if (dossiers) {
+      dossiersDB.clear();
+      for (const d of dossiers as DossierCandidature[]) dossiersDB.set(d.id, d);
+    }
+    await persistToStore();
+    res.json({ success: true, message: "Restauration effectuée avec succès." });
   });
 
   return app;
