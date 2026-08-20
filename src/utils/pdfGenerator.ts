@@ -10,11 +10,9 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   const PAGE_H = 297;
   const MARGIN = 14;
   const CONTENT_W = PAGE_W - 2 * MARGIN;
-  const LINE_H = 5;
 
   let y = 0;
 
-  // ─── CHECKS ───
   const ensure = (needed: number) => {
     if (y + needed > PAGE_H - 20) {
       doc.addPage();
@@ -24,23 +22,23 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
 
   // ─── HEADER ───
   doc.setFillColor(31, 78, 121);
-  doc.rect(0, 0, PAGE_W, 30, 'F');
+  doc.rect(0, 0, PAGE_W, 28, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('CHANGEMENT SOCIAL BÉNIN (CSB)', MARGIN, 10);
-  doc.setFont('helvetica', 'normal');
+  doc.text('CHANGEMENT SOCIAL BÉNIN (CSB)', MARGIN, 9.5);
   doc.setFontSize(8.5);
-  doc.text('Statut consultatif spécial ECOSOC / ONU · Observateur accrédité CADHP', MARGIN, 16);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Statut consultatif spécial ECOSOC / ONU · Observateur accrédité CADHP', MARGIN, 15);
   doc.setFont('helvetica', 'bold');
-  doc.text('3ᵉ Camp National Jeunes DDH 2026 · LES DESC EN ARRIMAGE AVEC LA VISION 2060', MARGIN, 22);
+  doc.text('3ᵉ Camp National Jeunes DDH 2026 · LES DESC EN ARRIMAGE AVEC LA VISION 2060', MARGIN, 21);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.text(`DOSSIER N° ${id}`, PAGE_W - MARGIN, 14, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.text(`Statut : ${statut.toUpperCase()}`, PAGE_W - MARGIN, 20, { align: 'right' });
 
-  y = 36;
+  y = 35;
 
   // ─── BANNER ───
   doc.setFillColor(235, 243, 251);
@@ -51,7 +49,7 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   doc.text('FICHE DE CANDIDATURE - MINI-ACTIVITÉ DE TERRAIN', MARGIN + 4, y + 8);
   y += 18;
 
-  // ─── SECTION TITLES ───
+  // ─── HELPERS ───
   const sectionTitle = (title: string) => {
     ensure(10);
     doc.setFillColor(122, 12, 16);
@@ -63,27 +61,24 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
     y += 9;
   };
 
-  // ─── FIELD (label + value sur la même ligne si possible) ───
-  const field = (label: string, value: string, opts?: { fullWidth?: boolean }) => {
-    const indent = MARGIN;
-    ensure(LINE_H + 4);
-
+  const field = (label: string, value: string, fullWidth: boolean = false) => {
+    ensure(8);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(31, 78, 121);
-    doc.text(`${label}`, indent, y + 3.5);
+    doc.text(`${label} :`, MARGIN, y);
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(40, 40, 40);
 
-    const valueX = opts?.fullWidth ? indent : indent + 60;
-    const maxWidth = opts?.fullWidth ? CONTENT_W : CONTENT_W - 60;
+    const valueX = fullWidth ? MARGIN : MARGIN + 60;
+    const maxWidth = fullWidth ? CONTENT_W : CONTENT_W - 60;
 
     const lines = doc.splitTextToSize(value || 'Non renseigné', maxWidth);
     const text = Array.isArray(lines) ? lines : [String(lines)];
-    doc.text(text, valueX, y + 3.5);
+    doc.text(text, valueX, y);
 
-    const blockH = Math.max(LINE_H, text.length * 4.5);
+    const blockH = Math.max(5, text.length * 4.5);
     y += blockH + 4;
   };
 
@@ -94,57 +89,65 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(31, 78, 121);
-  doc.text('Nom & Prénom', MARGIN, y + 3.5);
-  doc.text('Téléphone', MARGIN + 105, y + 3.5);
+  doc.text('Nom & Prénom :', MARGIN, y);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(40, 40, 40);
-  doc.text(`${form.nom} ${form.prenom}`, MARGIN, y + 9);
-  doc.text(form.telephone || '-', MARGIN + 105, y + 9);
-  y += 14;
+  doc.text(`${form.nom} ${form.prenom}`, MARGIN + 60, y);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(31, 78, 121);
+  doc.text('Téléphone :', MARGIN + 105, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(40, 40, 40);
+  doc.text(form.telephone || '-', MARGIN + 105 + 35, y);
+  y += 6;
 
   ensure(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 78, 121);
-  doc.text('E-mail', MARGIN, y + 3.5);
-  doc.text('Département', MARGIN + 105, y + 3.5);
+  doc.text('E-mail :', MARGIN, y);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(40, 40, 40);
-  doc.text(form.email || '-', MARGIN, y + 9);
-  doc.text(`${form.departement || '-'} (${form.commune || '-'})`, MARGIN + 105, y + 9);
-  y += 14;
+  doc.text(form.email || '-', MARGIN + 60, y);
 
-  field("Domaine d'intervention", form.domaines?.join(', ') || '-', { fullWidth: true });
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(31, 78, 121);
+  doc.text('Département :', MARGIN + 105, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(40, 40, 40);
+  doc.text(`${form.departement || '-'} (${form.commune || '-'})`, MARGIN + 105 + 35, y);
+  y += 6;
+
+  field("Domaine d'intervention", form.domaines?.join(', ') || '-', true);
 
   // ─── SECTION 2 ───
   sectionTitle('2. DESCRIPTION DE LA MINI-ACTIVITÉ');
-  field('Titre du projet', form.titreProjet, { fullWidth: true });
-  field('Problématique identifiée', form.problematique, { fullWidth: true });
-  field('Objectif général', form.objectifGeneral, { fullWidth: true });
-  field('Objectifs spécifiques', form.objectifsSpecifiques, { fullWidth: true });
-  field('Résultats attendus', form.resultatsAttendus, { fullWidth: true });
-  field('Bénéficiaires directs', form.beneficiairesDirects || 'Non précisé', { fullWidth: true });
-  field('Bénéficiaires indirects', form.beneficiairesIndirects || 'Non précisé', { fullWidth: true });
-  field("Zone d'intervention", form.zoneIntervention, { fullWidth: true });
+  field('Titre du projet', form.titreProjet, true);
+  field('Problématique identifiée', form.problematique, true);
+  field('Objectif général', form.objectifGeneral, true);
+  field('Objectifs spécifiques', form.objectifsSpecifiques, true);
+  field('Résultats attendus', form.resultatsAttendus, true);
+  field('Bénéficiaires directs', form.beneficiairesDirects || 'Non précisé', true);
+  field('Bénéficiaires indirects', form.beneficiairesIndirects || 'Non précisé', true);
+  field("Zone d'intervention", form.zoneIntervention, true);
 
   // ─── SECTION 3 ───
   sectionTitle('3. MÉTHODOLOGIE & ALIGNEMENT VISION BÉNIN 2060');
-  field('Méthodologie de mise en œuvre', form.methodologie, { fullWidth: true });
-  field("Chronogramme d'exécution", form.chronogramme, { fullWidth: true });
-  field('Contribution à la Vision Bénin 2060', form.lienVision2060, { fullWidth: true });
+  field('Méthodologie de mise en œuvre', form.methodologie, true);
+  field("Chronogramme d'exécution", form.chronogramme, true);
+  field('Contribution à la Vision Bénin 2060', form.lienVision2060, true);
 
   // ─── SECTION 4 ───
   sectionTitle('4. BUDGET INDICATIF DE LA MINI-ACTIVITÉ');
 
-  // Budget table
   ensure(20);
-  const colDesc = 95;
-  const colQt = 18;
-  const colUnit = 28;
-  const colTotal = 28;
-  const descX = MARGIN + 4;
-  const qtyX = MARGIN + colDesc + 4;
-  const unitX = MARGIN + colDesc + colQt + 4;
-  const totalX = MARGIN + colDesc + colQt + colUnit + 4;
+
+  // Budget table
+  const colWidths = [95, 18, 28, 28];
+  const colX = [MARGIN];
+  for (let i = 1; i < colWidths.length; i++) {
+    colX.push(colX[i - 1] + colWidths[i - 1]);
+  }
 
   // Header
   doc.setFillColor(31, 78, 121);
@@ -152,14 +155,14 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.text('Désignation', descX, y + 5.5);
-  doc.text('Qté', qtyX, y + 5.5);
-  doc.text('Coût Unit.', unitX, y + 5.5);
-  doc.text('Total', totalX, y + 5.5);
+  doc.text('Désignation', colX[0] + 4, y + 5.5);
+  doc.text('Qté', colX[1] + 4, y + 5.5);
+  doc.text('Coût Unit. (FCFA)', colX[2] + 4, y + 5.5);
+  doc.text('Total (FCFA)', colX[3] + 4, y + 5.5);
   y += 8;
 
   form.budgetItems.forEach((item, idx) => {
-    const rowH = 8;
+    const rowH = 7;
     ensure(rowH);
 
     if (idx % 2 === 1) {
@@ -171,18 +174,18 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
     doc.setFontSize(8);
     doc.setTextColor(40, 40, 40);
 
-    const descLines = doc.splitTextToSize(item.designation || '-', colQt - 4);
+    const descLines = doc.splitTextToSize(item.designation || '-', colWidths[0] - 6);
     const desc = Array.isArray(descLines) ? descLines : [String(descLines)];
-    doc.text(desc.slice(0, 3).join(' '), descX, y + 5);
+    doc.text(desc.slice(0, 2).join(' '), colX[0] + 4, y + 4.5);
 
-    doc.text(String(item.quantite || 0), qtyX, y + 5);
-    doc.text((item.coutUnitaire || 0).toLocaleString('fr-FR'), unitX, y + 5);
-    doc.text((item.quantite * item.coutUnitaire).toLocaleString('fr-FR'), totalX, y + 5);
+    doc.text(String(item.quantite || 0), colX[1] + 4, y + 4.5);
+    doc.text((item.coutUnitaire || 0).toLocaleString('fr-FR'), colX[2] + 4, y + 4.5);
+    doc.text((item.quantite * item.coutUnitaire).toLocaleString('fr-FR'), colX[3] + 4, y + 4.5);
 
     y += rowH;
   });
 
-  // Total row
+  // Total
   ensure(12);
   doc.setFillColor(122, 12, 16);
   doc.rect(MARGIN, y, CONTENT_W, 9, 'F');
