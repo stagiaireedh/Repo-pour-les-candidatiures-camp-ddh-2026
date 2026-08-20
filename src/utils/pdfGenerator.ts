@@ -1,214 +1,231 @@
 import { jsPDF } from 'jspdf';
 import { DossierCandidature } from '../types';
 
+// Nettoyer le texte pour jsPDF (évite les problèmes d'encodage)
+const t = (s: string | undefined | null) => {
+  return (s || '').replace(/[^\x00-\x7F]/g, (c) => {
+    const map: Record<string, string> = {
+      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'à': 'a', 'â': 'a', 'ä': 'a',
+      'ù': 'u', 'û': 'u', 'ü': 'u',
+      'ô': 'o', 'ö': 'o',
+      'î': 'i', 'ï': 'i',
+      'ç': 'c',
+      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+      'À': 'A', 'Â': 'A', 'Ä': 'A',
+      'Ù': 'U', 'Û': 'U', 'Ü': 'U',
+      'Ô': 'O', 'Ö': 'O',
+      'Î': 'I', 'Ï': 'I',
+      'Ç': 'C', '\'': "'", '’': "'",
+    };
+    return map[c] || c;
+  });
+};
+
 export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   const { form, id, statut, dateSoumission } = dossier;
   const totalBudget = form.budgetItems.reduce((s, i) => s + i.quantite * i.coutUnitaire, 0);
 
-  const PAGE_W = 210;
-  const PAGE_H = 297;
-  const MARGIN = 14;
-  const CONTENT_W = PAGE_W - 2 * MARGIN;
-
+  const W = 210, H = 297, M = 14, CW = W - 2 * M;
   let y = 0;
 
-  const ensure = (needed: number) => {
-    if (y + needed > PAGE_H - 20) {
-      doc.addPage();
-      y = 15;
-    }
+  const pageBreak = (need: number) => {
+    if (y + need > H - 15) { doc.addPage(); y = 15; }
   };
 
-  // ─── HEADER ───
+  const write = (text: string, x: number, yPos: number, opts?: { bold?: boolean; color?: [number, number, number]; size?: number; align?: 'left' | 'right' }) => {
+    doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+    doc.setFontSize(opts?.size || 10);
+    doc.setTextColor(...(opts?.color || [40, 40, 40]));
+    doc.text(t(text), x, yPos, { align: opts?.align || 'left' });
+  };
+
+  const line = (x1: number, y1: number, x2: number, y2: number) => {
+    doc.setDrawColor(200, 200, 200);
+    doc.line(x1, y1, x2, y2);
+  };
+
+  // ═══════════════════════════════════════
+  // HEADER
+  // ═══════════════════════════════════════
   doc.setFillColor(31, 78, 121);
-  doc.rect(0, 0, PAGE_W, 28, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.text('CHANGEMENT SOCIAL BÉNIN (CSB)', MARGIN, 9.5);
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Statut consultatif spécial ECOSOC / ONU · Observateur accrédité CADHP', MARGIN, 15);
-  doc.setFont('helvetica', 'bold');
-  doc.text('3ᵉ Camp National Jeunes DDH 2026 · LES DESC EN ARRIMAGE AVEC LA VISION 2060', MARGIN, 21);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text(`DOSSIER N° ${id}`, PAGE_W - MARGIN, 14, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Statut : ${statut.toUpperCase()}`, PAGE_W - MARGIN, 20, { align: 'right' });
+  doc.rect(0, 0, W, 26, 'F');
+  write('CHANGEMENT SOCIAL BENIN (CSB)', M, 10, { bold: true, color: [255, 255, 255], size: 13 });
+  write('Statut consultatif special ECOSOC / ONU', M, 16, { color: [255, 255, 255], size: 8.5 });
+  write('3e Camp National Jeunes DDH 2026', M, 22, { bold: true, color: [255, 255, 255], size: 8.5 });
+  write(`DOSSIER N° ${id}`, W - M, 14, { bold: true, color: [255, 255, 255], size: 9, align: 'right' });
+  write(`Statut : ${statut.toUpperCase()}`, W - M, 20, { color: [255, 255, 255], size: 9, align: 'right' });
 
-  y = 35;
+  y = 33;
 
-  // ─── BANNER ───
+  // ═══════════════════════════════════════
+  // BANNER
+  // ═══════════════════════════════════════
   doc.setFillColor(235, 243, 251);
-  doc.rect(MARGIN, y, CONTENT_W, 12, 'F');
-  doc.setTextColor(31, 78, 121);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('FICHE DE CANDIDATURE - MINI-ACTIVITÉ DE TERRAIN', MARGIN + 4, y + 8);
-  y += 18;
+  doc.rect(M, y, CW, 10, 'F');
+  write('FICHE DE CANDIDATURE - MINI-ACTIVITE DE TERRAIN', M + 4, y + 7, { bold: true, color: [31, 78, 121], size: 11 });
+  y += 16;
 
-  // ─── HELPERS ───
-  const sectionTitle = (title: string) => {
-    ensure(10);
-    doc.setFillColor(122, 12, 16);
-    doc.rect(MARGIN, y, 3, 7, 'F');
-    doc.setTextColor(122, 12, 16);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.text(title, MARGIN + 6, y + 5.5);
-    y += 9;
-  };
+  // ═══════════════════════════════════════
+  // SECTION 1
+  // ═══════════════════════════════════════
+  doc.setFillColor(122, 12, 16);
+  doc.rect(M, y, 3, 7, 'F');
+  write('1. IDENTIFICATION DE DU/DE LA CANDIDAT-E', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
+  y += 10;
 
-  const field = (label: string, value: string, fullWidth: boolean = false) => {
-    ensure(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(31, 78, 121);
-    doc.text(`${label} :`, MARGIN, y);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-
-    const valueX = fullWidth ? MARGIN : MARGIN + 60;
-    const maxWidth = fullWidth ? CONTENT_W : CONTENT_W - 60;
-    const valueY = fullWidth ? y + 5 : y;
-
-    const lines = doc.splitTextToSize(value || 'Non renseigné', maxWidth);
-    const text = Array.isArray(lines) ? lines : [String(lines)];
-    doc.text(text, valueX, valueY);
-
-    const blockH = Math.max(5, text.length * 4.5);
-    y += blockH + 4;
-  };
-
-  // ─── SECTION 1 ───
-  sectionTitle('1. IDENTIFICATION DE DU/DE LA CANDIDAT-E');
-
-  ensure(20);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(31, 78, 121);
-  doc.text('Nom & Prénom :', MARGIN, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(40, 40, 40);
-  doc.text(`${form.nom} ${form.prenom}`, MARGIN + 60, y);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(31, 78, 121);
-  doc.text('Téléphone :', MARGIN + 105, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(40, 40, 40);
-  doc.text(form.telephone || '-', MARGIN + 105 + 35, y);
+  // Ligne 1
+  write('Nom & Prenom :', M, y, { bold: true, color: [31, 78, 121] });
+  write(`${form.nom} ${form.prenom}`, M + 60, y);
   y += 6;
 
-  ensure(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(31, 78, 121);
-  doc.text('E-mail :', MARGIN, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(40, 40, 40);
-  doc.text(form.email || '-', MARGIN + 60, y);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(31, 78, 121);
-  doc.text('Département :', MARGIN + 105, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(40, 40, 40);
-  doc.text(`${form.departement || '-'} (${form.commune || '-'})`, MARGIN + 105 + 35, y);
+  write('Telephone :', M, y, { bold: true, color: [31, 78, 121] });
+  write(form.telephone || '-', M + 60, y);
   y += 6;
 
-  field("Domaine d'intervention", form.domaines?.join(', ') || '-', true);
+  write('E-mail :', M, y, { bold: true, color: [31, 78, 121] });
+  write(form.email || '-', M + 60, y);
+  y += 6;
 
-  // ─── SECTION 2 ───
-  sectionTitle('2. DESCRIPTION DE LA MINI-ACTIVITÉ');
-  field('Titre du projet', form.titreProjet, true);
-  field('Problématique identifiée', form.problematique, true);
-  field('Objectif général', form.objectifGeneral, true);
-  field('Objectifs spécifiques', form.objectifsSpecifiques, true);
-  field('Résultats attendus', form.resultatsAttendus, true);
-  field('Bénéficiaires directs', form.beneficiairesDirects || 'Non précisé', true);
-  field('Bénéficiaires indirects', form.beneficiairesIndirects || 'Non précisé', true);
-  field("Zone d'intervention", form.zoneIntervention, true);
+  write('Departement :', M, y, { bold: true, color: [31, 78, 121] });
+  write(`${form.departement || '-'} (${form.commune || '-'})`, M + 60, y);
+  y += 6;
 
-  // ─── SECTION 3 ───
-  sectionTitle('3. MÉTHODOLOGIE & ALIGNEMENT VISION BÉNIN 2060');
-  field('Méthodologie de mise en œuvre', form.methodologie, true);
-  field("Chronogramme d'exécution", form.chronogramme, true);
-  field('Contribution à la Vision Bénin 2060', form.lienVision2060, true);
+  write('Domaine :', M, y, { bold: true, color: [31, 78, 121] });
+  write(form.domaines?.join(', ') || '-', M + 60, y);
+  y += 10;
 
-  // ─── SECTION 4 ───
-  sectionTitle('4. BUDGET INDICATIF DE LA MINI-ACTIVITÉ');
+  // ═══════════════════════════════════════
+  // SECTION 2
+  // ═══════════════════════════════════════
+  doc.setFillColor(122, 12, 16);
+  doc.rect(M, y, 3, 7, 'F');
+  write('2. DESCRIPTION DE LA MINI-ACTIVITE', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
+  y += 10;
 
-  ensure(20);
+  write('Titre du projet', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const titreLines = doc.splitTextToSize(form.titreProjet || '-', CW);
+  doc.text(t(titreLines.join(' ')), M, y);
+  y += titreLines.length * 4.5 + 2;
 
-  // Budget table
-  const colWidths = [95, 18, 28, 28];
-  const colX = [MARGIN];
-  for (let i = 1; i < colWidths.length; i++) {
-    colX.push(colX[i - 1] + colWidths[i - 1]);
-  }
+  write('Problematique identifiee', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const probLines = doc.splitTextToSize(form.problematique || '-', CW);
+  doc.text(t(probLines.join(' ')), M, y);
+  y += probLines.length * 4.5 + 2;
 
-  // Header
+  write('Objectif general', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const objLines = doc.splitTextToSize(form.objectifGeneral || '-', CW);
+  doc.text(t(objLines.join(' ')), M, y);
+  y += objLines.length * 4.5 + 2;
+
+  write('Objectifs specifiques', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const objSpeLines = doc.splitTextToSize(form.objectifsSpecifiques || '-', CW);
+  doc.text(t(objSpeLines.join(' ')), M, y);
+  y += objSpeLines.length * 4.5 + 2;
+
+  write('Resultats attendus', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const resLines = doc.splitTextToSize(form.resultatsAttendus || '-', CW);
+  doc.text(t(resLines.join(' ')), M, y);
+  y += resLines.length * 4.5 + 2;
+
+  write('Beneficiaires directs', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  write(form.beneficiairesDirects || 'Non precise', M, y);
+  y += 6;
+
+  write('Beneficiaires indirects', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  write(form.beneficiairesIndirects || 'Non precise', M, y);
+  y += 6;
+
+  write("Zone d'intervention", M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  write(form.zoneIntervention || '-', M, y);
+  y += 8;
+
+  // ═══════════════════════════════════════
+  // SECTION 3
+  // ═══════════════════════════════════════
+  pageBreak(50);
+  doc.setFillColor(122, 12, 16);
+  doc.rect(M, y, 3, 7, 'F');
+  write('3. METHODOLOGIE & ALIGNEMENT VISION BENIN 2060', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
+  y += 10;
+
+  write('Methodologie de mise en oeuvre', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const methLines = doc.splitTextToSize(form.methodologie || '-', CW);
+  doc.text(t(methLines.join(' ')), M, y);
+  y += methLines.length * 4.5 + 2;
+
+  write("Chronogramme d'execution", M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const chronoLines = doc.splitTextToSize(form.chronogramme || '-', CW);
+  doc.text(t(chronoLines.join(' ')), M, y);
+  y += chronoLines.length * 4.5 + 2;
+
+  write('Contribution a la Vision Benin 2060', M, y, { bold: true, color: [31, 78, 121] });
+  y += 5;
+  const visionLines = doc.splitTextToSize(form.lienVision2060 || '-', CW);
+  doc.text(t(visionLines.join(' ')), M, y);
+  y += visionLines.length * 4.5 + 4;
+
+  // ═══════════════════════════════════════
+  // SECTION 4
+  // ═══════════════════════════════════════
+  pageBreak(40);
+  doc.setFillColor(122, 12, 16);
+  doc.rect(M, y, 3, 7, 'F');
+  write('4. BUDGET INDICATIF DE LA MINI-ACTIVITE', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
+  y += 10;
+
+  // Budget header
+  pageBreak(20);
   doc.setFillColor(31, 78, 121);
-  doc.rect(MARGIN, y, CONTENT_W, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text('Désignation', colX[0] + 4, y + 5.5);
-  doc.text('Qté', colX[1] + 4, y + 5.5);
-  doc.text('Coût Unit. (FCFA)', colX[2] + 4, y + 5.5);
-  doc.text('Total (FCFA)', colX[3] + 4, y + 5.5);
+  doc.rect(M, y, CW, 8, 'F');
+  write('Designation', M + 4, y + 5.5, { bold: true, color: [255, 255, 255], size: 9 });
+  write('Qte', M + 100, y + 5.5, { bold: true, color: [255, 255, 255], size: 9 });
+  write('Cout Unit.', M + 120, y + 5.5, { bold: true, color: [255, 255, 255], size: 9 });
+  write('Total', M + 160, y + 5.5, { bold: true, color: [255, 255, 255], size: 9 });
   y += 8;
 
   form.budgetItems.forEach((item, idx) => {
-    const rowH = 7;
-    ensure(rowH);
-
+    pageBreak(8);
     if (idx % 2 === 1) {
       doc.setFillColor(245, 247, 250);
-      doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
+      doc.rect(M, y, CW, 7, 'F');
     }
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(40, 40, 40);
-
-    const descLines = doc.splitTextToSize(item.designation || '-', colWidths[0] - 6);
-    const desc = Array.isArray(descLines) ? descLines : [String(descLines)];
-    doc.text(desc.slice(0, 2).join(' '), colX[0] + 4, y + 4.5);
-
-    doc.text(String(item.quantite || 0), colX[1] + 4, y + 4.5);
-    doc.text((item.coutUnitaire || 0).toLocaleString('fr-FR'), colX[2] + 4, y + 4.5);
-    doc.text((item.quantite * item.coutUnitaire).toLocaleString('fr-FR'), colX[3] + 4, y + 4.5);
-
-    y += rowH;
+    write(item.designation || '-', M + 4, y + 5, { size: 9 });
+    write(String(item.quantite || 0), M + 100, y + 5, { size: 9 });
+    write((item.coutUnitaire || 0).toLocaleString('fr-FR'), M + 120, y + 5, { size: 9 });
+    write((item.quantite * item.coutUnitaire).toLocaleString('fr-FR'), M + 160, y + 5, { size: 9 });
+    y += 7;
   });
 
   // Total
-  ensure(12);
+  pageBreak(12);
   doc.setFillColor(122, 12, 16);
-  doc.rect(MARGIN, y, CONTENT_W, 9, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('TOTAL BUDGET', MARGIN + 6, y + 6);
-  doc.text(`${totalBudget.toLocaleString('fr-FR')} FCFA`, PAGE_W - MARGIN - 6, y + 6, { align: 'right' });
+  doc.rect(M, y, CW, 9, 'F');
+  write('TOTAL BUDGET', M + 6, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
+  write(`${totalBudget.toLocaleString('fr-FR')} FCFA`, W - M - 6, y + 6.5, { bold: true, color: [255, 255, 255], size: 11, align: 'right' });
   y += 14;
 
-  // ─── FOOTER ───
-  ensure(20);
-  doc.setDrawColor(200, 200, 200);
-  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+  // ═══════════════════════════════════════
+  // FOOTER
+  // ═══════════════════════════════════════
+  pageBreak(15);
+  line(M, y, W - M, y);
   y += 6;
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text('Document généré via la plateforme Officielle CSB Bénin - Camp National Droits Humains 2026.', MARGIN, y);
+  write('Document genere via la plateforme Officielle CSB Benin - Camp National Droits Humains 2026.', M, y, { size: 8, color: [100, 100, 100] });
   y += 4;
   if (dateSoumission) {
-    doc.text(`Dossier transmis le ${new Date(dateSoumission).toLocaleDateString('fr-FR')} à ${new Date(dateSoumission).toLocaleTimeString('fr-FR')}`, MARGIN, y);
+    write(`Dossier transmis le ${new Date(dateSoumission).toLocaleDateString('fr-FR')} a ${new Date(dateSoumission).toLocaleTimeString('fr-FR')}`, M, y, { size: 8, color: [100, 100, 100] });
   }
 
   doc.save(`CSB_Dossier_${id}_${form.nom.replace(/\s+/g, '_')}.pdf`);
@@ -216,80 +233,66 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
 
 export function generateGlobalListPdf(dossiers: DossierCandidature[]): void {
   const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
-  const PAGE_W = 297, PAGE_H = 210, MARGIN = 12, CONTENT_W = PAGE_W - 2 * MARGIN;
+  const W = 297, H = 210, M = 12, CW = W - 2 * M;
   let y = 0;
 
-  const ensure = (needed: number) => {
-    if (y + needed > PAGE_H - 15) { doc.addPage(); y = 15; }
+  const pageBreak = (need: number) => {
+    if (y + need > H - 15) { doc.addPage(); y = 15; }
+  };
+
+  const write = (text: string, x: number, yPos: number, opts?: { bold?: boolean; color?: [number, number, number]; size?: number; align?: 'left' | 'right' }) => {
+    doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+    doc.setFontSize(opts?.size || 10);
+    doc.setTextColor(...(opts?.color || [40, 40, 40]));
+    doc.text(t(text), x, yPos, { align: opts?.align || 'left' });
   };
 
   // Header
   doc.setFillColor(31, 78, 121);
-  doc.rect(0, 0, PAGE_W, 24, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('CHANGEMENT SOCIAL BÉNIN (CSB) — Rapport Récapitulatif', 14, 10);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text('3ᵉ Camp National Jeunes DDH 2026 · Mini-Activités · Vision Bénin 2060', 14, 16);
+  doc.rect(0, 0, W, 24, 'F');
+  write('CHANGEMENT SOCIAL BENIN (CSB) — Rapport Recapitulatif', 14, 10, { bold: true, color: [255, 255, 255], size: 12 });
+  write('3e Camp National Jeunes DDH 2026', 14, 16, { color: [255, 255, 255], size: 9 });
   const nowStr = new Date().toLocaleDateString('fr-FR');
-  doc.text(`Export : ${nowStr} | Total : ${dossiers.length}`, PAGE_W - 14, 16, { align: 'right' });
+  write(`Export : ${nowStr} | Total : ${dossiers.length}`, W - 14, 16, { color: [255, 255, 255], size: 9, align: 'right' });
 
   y = 30;
 
-  // Table columns
+  // Table header
   const cols = [
-    { label: 'N° Dossier', x: MARGIN + 4, w: 38 },
-    { label: 'Candidat-e', x: MARGIN + 42, w: 45 },
-    { label: 'Département', x: MARGIN + 87, w: 35 },
-    { label: 'Domaine', x: MARGIN + 122, w: 45 },
-    { label: 'Titre du Projet', x: MARGIN + 167, w: 55 },
-    { label: 'Budget', x: MARGIN + 222, w: 28 },
-    { label: 'Statut', x: MARGIN + 250, w: 25 },
+    { label: 'N° Dossier', x: M + 4, w: 35 },
+    { label: 'Candidat-e', x: M + 39, w: 45 },
+    { label: 'Departement', x: M + 84, w: 35 },
+    { label: 'Domaine', x: M + 119, w: 45 },
+    { label: 'Titre du Projet', x: M + 164, w: 55 },
+    { label: 'Budget', x: M + 219, w: 28 },
+    { label: 'Statut', x: M + 247, w: 25 },
   ];
 
-  // Header
   doc.setFillColor(122, 12, 16);
-  doc.rect(MARGIN, y, CONTENT_W, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  cols.forEach(c => doc.text(c.label, c.x, y + 5.5));
+  doc.rect(M, y, CW, 8, 'F');
+  cols.forEach(c => write(c.label, c.x, y + 5.5, { bold: true, color: [255, 255, 255], size: 8 }));
   y += 8;
 
   dossiers.forEach((d, idx) => {
-    ensure(8);
+    pageBreak(8);
     if (idx % 2 === 1) {
       doc.setFillColor(245, 247, 250);
-      doc.rect(MARGIN, y, CONTENT_W, 7, 'F');
+      doc.rect(M, y, CW, 7, 'F');
     }
 
-    doc.setFontSize(7.5);
-    doc.setTextColor(40, 40, 40);
-
-    doc.setFont('helvetica', 'bold');
-    doc.text(d.id, cols[0].x, y + 5);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${d.form.nom} ${d.form.prenom}`.substring(0, 28), cols[1].x, y + 5);
-    doc.text(`${d.form.departement}`, cols[2].x, y + 5);
-
+    write(d.id, cols[0].x, y + 5, { bold: true, size: 8 });
+    write(`${d.form.nom} ${d.form.prenom}`.substring(0, 28), cols[1].x, y + 5, { size: 8 });
+    write(`${d.form.departement}`, cols[2].x, y + 5, { size: 8 });
     const dom = (d.form.domaines?.[0] || '-').split('(')[0].trim().substring(0, 28);
-    doc.text(dom, cols[3].x, y + 5);
-
+    write(dom, cols[3].x, y + 5, { size: 8 });
     const ttl = (d.form.titreProjet || '-').substring(0, 32);
-    doc.text(ttl, cols[4].x, y + 5);
-
+    write(ttl, cols[4].x, y + 5, { size: 8 });
     const budget = d.form.budgetItems.reduce((s, b) => s + b.quantite * b.coutUnitaire, 0);
-    doc.text(budget.toLocaleString('fr-FR'), cols[5].x, y + 5);
-
+    write(budget.toLocaleString('fr-FR'), cols[5].x, y + 5, { size: 8 });
     if (d.statut === 'soumis') {
-      doc.setTextColor(22, 101, 52);
-      doc.text('SOUMIS', cols[6].x, y + 5);
+      write('SOUMIS', cols[6].x, y + 5, { color: [22, 101, 52], size: 8 });
     } else {
-      doc.setTextColor(180, 83, 9);
-      doc.text('BROUILLON', cols[6].x, y + 5);
+      write('BROUILLON', cols[6].x, y + 5, { color: [180, 83, 9], size: 8 });
     }
     y += 7;
   });
