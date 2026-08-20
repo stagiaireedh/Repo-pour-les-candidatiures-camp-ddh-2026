@@ -212,7 +212,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       d.id.toLowerCase().includes(searchLower);
 
     const matchDept = selectedDept === 'Tous' || d.form.departement === selectedDept;
-    const matchDomaine = selectedDomaine === 'Tous' || d.form.domaine.includes(selectedDomaine);
+    const matchDomaine = selectedDomaine === 'Tous' || (d.form.domaines && d.form.domaines.some(dom => dom.toLowerCase().includes(selectedDomaine.toLowerCase())));
     const matchStatut = selectedStatut === 'Tous' || d.statut === selectedStatut;
 
     return matchSearch && matchDept && matchDomaine && matchStatut;
@@ -698,7 +698,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                       <td className="p-3.5 max-w-[180px]">
                         <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-[#1F4E79] font-semibold text-[11px] truncate w-full">
-                          {d.form.domaine ? d.form.domaine.split('(')[0] : '-'}
+                          {d.form.domaines && d.form.domaines.length > 0 ? d.form.domaines.join(', ').split('(')[0].trim() : '-'}
                         </span>
                       </td>
 
@@ -815,7 +815,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <p><strong>Candidat-e :</strong> {viewDossier.form.nom} {viewDossier.form.prenom}</p>
                   <p><strong>Contact :</strong> {viewDossier.form.telephone} | {viewDossier.form.email}</p>
                   <p><strong>Département :</strong> {viewDossier.form.departement} ({viewDossier.form.commune})</p>
-                  <p><strong>Domaine :</strong> {viewDossier.form.domaine}</p>
+                  <p><strong>Domaine :</strong> {viewDossier.form.domaines?.join(', ') || '-'}</p>
                 </div>
               </div>
 
