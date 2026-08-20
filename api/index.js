@@ -237,12 +237,24 @@ var initialDossiers = [
   }
 ];
 initialDossiers.forEach((d) => dossiersDB.set(d.id, d));
-var REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-var REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+var REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+var REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 var redis = REDIS_URL && REDIS_TOKEN ? new import_redis.Redis({ url: REDIS_URL, token: REDIS_TOKEN }) : null;
 var KEY_USERS = "csb:users";
 var KEY_TOKENS = "csb:tokens";
 var KEY_DOSSIERS = "csb:dossiers";
+function parseRedisData(raw) {
+  if (raw == null) return null;
+  if (typeof raw === "object") return raw;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 async function loadFromStore() {
   if (!redis) return;
   try {
@@ -251,40 +263,30 @@ async function loadFromStore() {
       redis.get(KEY_TOKENS),
       redis.get(KEY_DOSSIERS)
     ]);
-    if (u) {
-      const parsed = JSON.parse(String(u));
-      if (Object.keys(parsed).length > 0) {
-        usersDB.clear();
-        for (const [k, v] of Object.entries(parsed)) usersDB.set(k, v);
-      }
+    const usersData = parseRedisData(u);
+    if (usersData && Object.keys(usersData).length > 0) {
+      usersDB.clear();
+      for (const [k, v] of Object.entries(usersData)) usersDB.set(k, v);
     }
-    if (t) {
-      const parsed = JSON.parse(String(t));
-      if (Object.keys(parsed).length > 0) {
-        tokensDB.clear();
-        for (const [k, v] of Object.entries(parsed)) tokensDB.set(k, v);
-      }
+    const tokensData = parseRedisData(t);
+    if (tokensData && Object.keys(tokensData).length > 0) {
+      tokensDB.clear();
+      for (const [k, v] of Object.entries(tokensData)) tokensDB.set(k, v);
     }
-    if (d) {
-      const parsed = JSON.parse(String(d));
-      if (Object.keys(parsed).length > 0) {
-        dossiersDB.clear();
-        for (const [k, v] of Object.entries(parsed)) dossiersDB.set(k, v);
-      }
+    const dossiersData = parseRedisData(d);
+    if (dossiersData && Object.keys(dossiersData).length > 0) {
+      dossiersDB.clear();
+      for (const [k, v] of Object.entries(dossiersData)) dossiersDB.set(k, v);
     }
     let needsPersist = false;
     if (!usersDB.has(initialAdmin.id)) {
       usersDB.set(initialAdmin.id, initialAdmin);
       needsPersist = true;
     }
-    if (!u && !t && !d) {
-      needsPersist = true;
-    }
-    if (needsPersist) {
-      await persistToStore();
-    }
+    if (!u && !t && !d) needsPersist = true;
+    if (needsPersist) await persistToStore();
   } catch (err) {
-    console.error("[persistence] \xE9chec de chargement, repli en m\xE9moire :", err);
+    console.error("[persistence] \xE9chec, repli m\xE9moire :", err);
   }
 }
 async function persistToStore() {
