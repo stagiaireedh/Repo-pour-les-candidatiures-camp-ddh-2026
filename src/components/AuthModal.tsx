@@ -43,6 +43,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (!password.trim()) {
+      setErrorMsg('Veuillez choisir un mot de passe.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await apiRegisterCandidate({
@@ -252,7 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#1F4E79]" />
-                  <span>Mot de passe (optionnel)</span>
+                  <span>Mot de passe <span className="text-rose-600">*</span></span>
                 </label>
                 <input
                   type="password"
@@ -314,19 +319,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
             </form>
           )}
-
-          {/* Quick Demo Fill Helper Button */}
-          <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            <span className="text-slate-500 font-medium">Pour tester la plateforme :</span>
-            <button
-              type="button"
-              onClick={fillQuickDemo}
-              className="text-[#7A0C10] hover:text-[#5e090c] font-bold hover:underline flex items-center gap-1.5 cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Remplir exemple candidat-e (Aïchatou)</span>
-            </button>
-          </div>
 
         </div>
 

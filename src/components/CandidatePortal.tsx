@@ -250,7 +250,7 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
                 Dossier N° <span className="text-amber-300">{dossier.id}</span>
               </h2>
               <p className="text-sm text-emerald-100 max-w-xl leading-relaxed font-medium">
-                Félicitations {currentUser.prenom} ! Votre dossier a été enregistré pour la sélection de la 3ᵉ édition du Camp National des Jeunes sur les Droits Humains 2026.
+                Félicitations {currentUser.prenom} ! Votre dossier a été enregistré pour l'accompagnement technique et logistique des mini-activités du 3ᵉ Camp National des Jeunes sur les Droits Humains 2026.
               </p>
             </div>
 
@@ -991,7 +991,7 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
                   className="mt-1 text-[#1F4E79] rounded focus:ring-[#1F4E79] w-5 h-5 cursor-pointer shrink-0"
                 />
                 <span className="text-slate-900 leading-relaxed font-semibold text-xs sm:text-sm">
-                  <strong>Engagement sur l'honneur :</strong> Je certifie que les informations renseignées dans ce dossier sont exactes et sincères. Je m'engage à participer pleinement aux activités du 3ᵉ Camp National des Jeunes sur les Droits Humains 2026.
+                  <strong>Engagement sur l'honneur :</strong> Je certifie que les informations renseignées dans ce dossier sont exactes et sincères. Je m'engage à mener à bien la mini-activité pour laquelle je sollicite un accompagnement technique et logistique.
                 </span>
               </label>
             </div>
