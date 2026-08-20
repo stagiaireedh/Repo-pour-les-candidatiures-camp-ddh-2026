@@ -67,7 +67,7 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
     telephone: u.telephone,
     departement: u.departement,
     commune: '',
-    domaine: 'SDR (Surveillance-Documentation-Rapportage)',
+    domaines: [],
     titreProjet: '',
     problematique: '',
     objectifGeneral: '',
@@ -214,9 +214,8 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
       return;
     }
 
-    // Vérification des champs obligatoires côté client
     const requiredFields = [
-      "nom", "prenom", "email", "telephone", "departement", "commune", "domaine",
+      "nom", "prenom", "email", "telephone", "departement", "commune",
       "titreProjet", "problematique", "objectifGeneral", "resultatsAttendus",
       "zoneIntervention", "methodologie", "chronogramme", "lienVision2060"
     ];
@@ -226,7 +225,11 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
       return;
     }
 
-    // Soumettre directement au serveur
+    if (!form.domaines || form.domaines.length === 0) {
+      alert("Veuillez sélectionner au moins un domaine d'intervention.");
+      return;
+    }
+
     try {
       const remoteSubmitted = await apiSubmitDossier(form);
       setDossier(remoteSubmitted);
@@ -310,7 +313,7 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
 
             <div className="space-y-1.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
               <span className="text-slate-500 font-bold block uppercase text-xs">Domaine & Budget</span>
-              <p className="text-[#1F4E79] font-bold text-sm">{dossier.form.domaine}</p>
+              <p className="text-[#1F4E79] font-bold text-sm">{form.domaines?.join(', ') || '-'}</p>
               <p className="text-slate-900 font-extrabold text-base text-[#7A0C10] pt-1">
                 Total Budget : {totalBudget.toLocaleString('fr-FR')} FCFA
               </p>
@@ -549,22 +552,27 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
             </div>
 
             <div>
-              <label className="block font-bold text-slate-900 text-xs sm:text-sm mb-2.5">Domaine d'intervention de la Mini-Activité <span className="text-rose-600">*</span></label>
+              <label className="block font-bold text-slate-900 text-xs sm:text-sm mb-2.5">Domaine d'intervention <span className="text-rose-600">*</span></label>
               <div className="space-y-2.5">
                 {DOMAINES.map((d) => (
                   <label
                     key={d}
                     className={`flex items-center p-3.5 rounded-xl border text-xs sm:text-sm cursor-pointer transition-all ${
-                      form.domaine === d
+                      form.domaines.includes(d)
                         ? 'border-[#1F4E79] bg-[#EBF3FB] font-extrabold text-[#1F4E79] shadow-xs'
                         : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-medium'
                     }`}
                   >
                     <input
-                      type="radio"
-                      name="domaine"
-                      checked={form.domaine === d}
-                      onChange={() => handleFieldChange('domaine', d)}
+                      type="checkbox"
+                      checked={form.domaines.includes(d)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleFieldChange('domaines', [...form.domaines, d]);
+                        } else {
+                          handleFieldChange('domaines', form.domaines.filter(v => v !== d));
+                        }
+                      }}
                       className="mr-3 text-[#1F4E79] focus:ring-[#1F4E79] w-4 h-4"
                     />
                     <span>{d}</span>
@@ -880,9 +888,25 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, o
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Domaine d'intervention</label>
-                  <select value={form.domaine} onChange={(e) => handleFieldChange('domaine', e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-medium focus:ring-2 focus:ring-[#1F4E79] focus:outline-none">
-                    {DOMAINES.map(d => (<option key={d} value={d}>{d}</option>))}
-                  </select>
+                  <div className="space-y-2">
+                    {DOMAINES.map(d => (
+                      <label key={d} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={form.domaines.includes(d)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              handleFieldChange('domaines', [...form.domaines, d]);
+                            } else {
+                              handleFieldChange('domaines', form.domaines.filter(v => v !== d));
+                            }
+                          }}
+                          className="text-[#1F4E79] focus:ring-[#1F4E79] w-4 h-4"
+                        />
+                        <span>{d}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </section>
 

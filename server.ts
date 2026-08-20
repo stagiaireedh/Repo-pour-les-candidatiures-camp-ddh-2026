@@ -598,7 +598,7 @@ export async function createApp(): Promise<Express> {
 
     // Vérification des champs obligatoires
     const requiredFields = [
-      "nom", "prenom", "email", "telephone", "departement", "commune", "domaine",
+      "nom", "prenom", "email", "telephone", "departement", "commune",
       "titreProjet", "problematique", "objectifGeneral", "resultatsAttendus",
       "zoneIntervention", "methodologie", "chronogramme", "lienVision2060"
     ];
@@ -608,6 +608,11 @@ export async function createApp(): Promise<Express> {
         error: "Veuillez renseigner tous les champs obligatoires avant de soumettre.",
         missing,
       });
+      return;
+    }
+
+    if (!form.domaines || !Array.isArray(form.domaines) || form.domaines.length === 0) {
+      res.status(400).json({ error: "Veuillez sélectionner au moins un domaine d'intervention." });
       return;
     }
 

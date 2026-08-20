@@ -99,7 +99,7 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   doc.text(`Domaine d'intervention :`, 14, y);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(40, 40, 40);
-  doc.text(form.domaine || 'Non spécifié', 58, y);
+  doc.text(form.domaines?.join(', ') || 'Non spécifié', 58, y);
   y += 10;
 
   // Section 2: Description du projet
@@ -286,7 +286,8 @@ export function generateGlobalListPdf(dossiers: DossierCandidature[]): void {
 
     doc.text(`${d.form.departement} (${d.form.commune || '-'})`, 100, y + 5.5);
 
-    const domaineShort = d.form.domaine ? d.form.domaine.split('(')[0].trim() : '-';
+    const domainesText = (d.form.domaines && d.form.domaines.length > 0) ? d.form.domaines.join(', ') : '-';
+    const domaineShort = domainesText.split('(')[0].trim() || '-';
     doc.text(domaineShort, 130, y + 5.5);
 
     const titleShort = doc.splitTextToSize(d.form.titreProjet || 'Sans titre', 60);

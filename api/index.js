@@ -527,7 +527,6 @@ async function createApp() {
       "telephone",
       "departement",
       "commune",
-      "domaine",
       "titreProjet",
       "problematique",
       "objectifGeneral",
@@ -543,6 +542,10 @@ async function createApp() {
         error: "Veuillez renseigner tous les champs obligatoires avant de soumettre.",
         missing
       });
+      return;
+    }
+    if (!form.domaines || !Array.isArray(form.domaines) || form.domaines.length === 0) {
+      res.status(400).json({ error: "Veuillez s\xE9lectionner au moins un domaine d'intervention." });
       return;
     }
     if (!form.engagementHonneur) {

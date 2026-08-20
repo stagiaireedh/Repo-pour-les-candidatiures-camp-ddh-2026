@@ -29,7 +29,7 @@ export interface CandidatureForm {
   telephone: string;
   departement: DepartementBenin | '';
   commune: string;
-  domaine: DomaineActivite | '';
+  domaines: DomaineActivite[];
 
   // Étape 2: Description du projet
   titreProjet: string;
