@@ -286,6 +286,7 @@ function parseRedisData<T>(raw: unknown): T | null {
 }
 
 let storeLoaded = false;
+let seedDone = false;
 
 async function loadFromStore(): Promise<void> {
   if (!redis || storeLoaded) return;
@@ -314,7 +315,8 @@ async function loadFromStore(): Promise<void> {
     }
     // Ne reseeder QUE si le flag csb:seeded n'existe JAMAIS dans Redis.
     // Après le premier seed, ce flag persiste et protège les vraies données.
-    if (!seeded) {
+    if (!seeded && !seedDone) {
+      seedDone = true;
       let needsPersist = false;
       if (!usersDB.has(initialAdmin.id)) { usersDB.set(initialAdmin.id, initialAdmin); needsPersist = true; }
       if (usersDB.size <= 1 && dossiersDB.size === 0) {
@@ -594,10 +596,34 @@ export async function createApp(): Promise<Express> {
       return;
     }
 
+    // Vérification des champs obligatoires
+    const requiredFields = [
+      "nom", "prenom", "email", "telephone", "departement", "commune", "domaine",
+      "titreProjet", "problematique", "objectifGeneral", "resultatsAttendus",
+      "zoneIntervention", "methodologie", "chronogramme", "lienVision2060"
+    ];
+    const missing = requiredFields.filter((f) => !form[f] || String(form[f]).trim() === "");
+    if (missing.length > 0) {
+      res.status(400).json({
+        error: "Veuillez renseigner tous les champs obligatoires avant de soumettre.",
+        missing,
+      });
+      return;
+    }
+
+    if (!form.engagementHonneur) {
+      res.status(400).json({ error: "Veuillez cocher l'engagement sur l'honneur." });
+      return;
+    }
+
     const now = new Date().toISOString();
     let dossier = Array.from(dossiersDB.values()).find((d) => d.userId === userId);
 
     if (dossier) {
+      if (dossier.statut === "soumis") {
+        res.status(400).json({ error: "Ce dossier a déjà été soumis et ne peut plus être modifié." });
+        return;
+      }
       dossier.form = form;
       dossier.statut = "soumis";
       dossier.dateDerniereModif = now;
@@ -629,14 +655,24 @@ export async function createApp(): Promise<Express> {
 
   app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const existed = dossiersDB.has(id);
+    const dossier = dossiersDB.get(id);
+    if (!dossier) {
+      return res.status(404).json({ error: "Dossier introuvable." });
+    }
+    // Supprimer le dossier
     dossiersDB.delete(id);
+    // Supprimer le compte utilisateur (le candidat devra se recréer un compte)
+    const userId = dossier.userId;
+    const user = usersDB.get(userId);
+    if (user && user.role === "candidat") {
+      usersDB.delete(userId);
+      // Invalider tous les tokens de cet utilisateur
+      for (const [token, uid] of tokensDB) {
+        if (uid === userId) tokensDB.delete(token);
+      }
+    }
     await persistToStore();
-    res.json({
-      success: true,
-      existed,
-      message: existed ? "Dossier supprimé avec succès." : "Dossier déjà absent (aucun effet)."
-    });
+    res.json({ success: true, message: "Dossier et compte candidat supprimés. Le candidat devra se recréer un nouveau compte." });
   });
 
   app.post("/api/admin/reset", adminMiddleware, async (_req: AuthenticatedRequest, res: Response) => {

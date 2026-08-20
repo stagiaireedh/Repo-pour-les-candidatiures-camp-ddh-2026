@@ -257,6 +257,7 @@ function parseRedisData(raw) {
   return null;
 }
 var storeLoaded = false;
+var seedDone = false;
 async function loadFromStore() {
   if (!redis || storeLoaded) return;
   storeLoaded = true;
@@ -282,7 +283,8 @@ async function loadFromStore() {
       dossiersDB.clear();
       for (const [k, v] of Object.entries(dossiersData)) dossiersDB.set(k, v);
     }
-    if (!seeded) {
+    if (!seeded && !seedDone) {
+      seedDone = true;
       let needsPersist = false;
       if (!usersDB.has(initialAdmin.id)) {
         usersDB.set(initialAdmin.id, initialAdmin);
@@ -518,9 +520,42 @@ async function createApp() {
       res.status(400).json({ error: "Donn\xE9es du formulaire manquantes." });
       return;
     }
+    const requiredFields = [
+      "nom",
+      "prenom",
+      "email",
+      "telephone",
+      "departement",
+      "commune",
+      "domaine",
+      "titreProjet",
+      "problematique",
+      "objectifGeneral",
+      "resultatsAttendus",
+      "zoneIntervention",
+      "methodologie",
+      "chronogramme",
+      "lienVision2060"
+    ];
+    const missing = requiredFields.filter((f) => !form[f] || String(form[f]).trim() === "");
+    if (missing.length > 0) {
+      res.status(400).json({
+        error: "Veuillez renseigner tous les champs obligatoires avant de soumettre.",
+        missing
+      });
+      return;
+    }
+    if (!form.engagementHonneur) {
+      res.status(400).json({ error: "Veuillez cocher l'engagement sur l'honneur." });
+      return;
+    }
     const now = (/* @__PURE__ */ new Date()).toISOString();
     let dossier = Array.from(dossiersDB.values()).find((d) => d.userId === userId);
     if (dossier) {
+      if (dossier.statut === "soumis") {
+        res.status(400).json({ error: "Ce dossier a d\xE9j\xE0 \xE9t\xE9 soumis et ne peut plus \xEAtre modifi\xE9." });
+        return;
+      }
       dossier.form = form;
       dossier.statut = "soumis";
       dossier.dateDerniereModif = now;
@@ -548,14 +583,21 @@ async function createApp() {
   });
   app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req, res) => {
     const { id } = req.params;
-    const existed = dossiersDB.has(id);
+    const dossier = dossiersDB.get(id);
+    if (!dossier) {
+      return res.status(404).json({ error: "Dossier introuvable." });
+    }
     dossiersDB.delete(id);
+    const userId = dossier.userId;
+    const user = usersDB.get(userId);
+    if (user && user.role === "candidat") {
+      usersDB.delete(userId);
+      for (const [token, uid] of tokensDB) {
+        if (uid === userId) tokensDB.delete(token);
+      }
+    }
     await persistToStore();
-    res.json({
-      success: true,
-      existed,
-      message: existed ? "Dossier supprim\xE9 avec succ\xE8s." : "Dossier d\xE9j\xE0 absent (aucun effet)."
-    });
+    res.json({ success: true, message: "Dossier et compte candidat supprim\xE9s. Le candidat devra se recr\xE9er un nouveau compte." });
   });
   app.post("/api/admin/reset", adminMiddleware, async (_req, res) => {
     dossiersDB.clear();

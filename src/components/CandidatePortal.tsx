@@ -7,16 +7,17 @@ import {
   DepartementBenin, 
   BudgetItem 
 } from '../types';
-import { 
-  getDossierByUserId, 
-  createOrUpdateDraft, 
+import {
+  getDossierByUserId,
+  createOrUpdateDraft,
   submitDossier,
   deleteDossierByUserId
 } from '../utils/storage';
-import { 
-  apiGetMyDossier, 
-  apiSaveDraft, 
-  apiSubmitDossier 
+import {
+  apiGetMyDossier,
+  apiSaveDraft,
+  apiSubmitDossier,
+  clearStoredTokens
 } from '../utils/api';
 import { generateSingleDossierPdf } from '../utils/pdfGenerator';
 import { 
@@ -37,6 +38,7 @@ import {
 
 interface CandidatePortalProps {
   currentUser: UserAccount;
+  onLogout?: () => void;
 }
 
 const DOMAINES: DomaineActivite[] = [
@@ -50,7 +52,7 @@ const DEPARTEMENTS: DepartementBenin[] = [
   'Donga', 'Littoral', 'Mono', 'Ouémé', 'Plateau', 'Zou'
 ];
 
-export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser }) => {
+export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser, onLogout }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [dossier, setDossier] = useState<DossierCandidature | null>(null);
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
@@ -108,7 +110,6 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
             setForm(remote.form);
             createOrUpdateDraft(currentUser.id, remote.form);
           } else {
-            // Server has no dossier for this user (e.g. deleted by admin)
             if (localExisting) {
               deleteDossierByUserId(currentUser.id);
               setDossier(null);
@@ -118,7 +119,12 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
             }
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        // Compte supprimé ou session invalide → forcer déconnexion
+        if (err.message && (err.message.includes('401') || err.message.includes('session') || err.message.includes('connecté'))) {
+          clearStoredTokens();
+          onLogout?.();
+        }
         console.warn('Could not fetch remote dossier:', err);
       }
     };
@@ -208,16 +214,24 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({ currentUser })
       return;
     }
 
-    // 1. Submit locally for immediate feedback
-    const localSubmitted = submitDossier(currentUser.id, form);
-    setDossier(localSubmitted);
+    // Vérification des champs obligatoires côté client
+    const requiredFields = [
+      "nom", "prenom", "email", "telephone", "departement", "commune", "domaine",
+      "titreProjet", "problematique", "objectifGeneral", "resultatsAttendus",
+      "zoneIntervention", "methodologie", "chronogramme", "lienVision2060"
+    ];
+    const missing = requiredFields.filter(f => !form[f] || String(form[f]).trim() === "");
+    if (missing.length > 0) {
+      alert(`Veuillez renseigner tous les champs obligatoires :\n${missing.map(f => `• ${f}`).join("\n")}`);
+      return;
+    }
 
-    // 2. Submit to server API so admin receives it immediately
+    // Soumettre directement au serveur
     try {
       const remoteSubmitted = await apiSubmitDossier(form);
       setDossier(remoteSubmitted);
     } catch (err: any) {
-      console.warn('Backend submission failed, maintained local submission:', err);
+      alert(err.message || 'Erreur lors de la soumission.');
     }
 
     setShowSubmitModal(false);
