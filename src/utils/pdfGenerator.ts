@@ -24,6 +24,7 @@ const t = (s: string | undefined | null) => {
 
 export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  doc.setLineHeightFactor(1.0);
   const { form, id, statut, dateSoumission } = dossier;
   const totalBudget = form.budgetItems.reduce((s, i) => s + i.quantite * i.coutUnitaire, 0);
 
@@ -39,6 +40,14 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
     doc.setFontSize(opts?.size || 10);
     doc.setTextColor(...(opts?.color || [40, 40, 40]));
     doc.text(t(text), x, yPos, { align: opts?.align || 'left' });
+  };
+
+  const writeLines = (lines: string[], x: number, yPos: number) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    const clean = (Array.isArray(lines) ? lines : [String(lines)]).map(l => t(l));
+    doc.text(clean, x, yPos);
   };
 
   const line = (x1: number, y1: number, x2: number, y2: number) => {
@@ -114,31 +123,31 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   write('Titre du projet', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const titreLines = doc.splitTextToSize(form.titreProjet || '-', CW);
-  doc.text(t(titreLines.join(' ')), M, y);
+  writeLines(titreLines, M, y);
   y += titreLines.length * 4.5 + 2;
 
   write('Problematique identifiee', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const probLines = doc.splitTextToSize(form.problematique || '-', CW);
-  doc.text(t(probLines.join(' ')), M, y);
+  writeLines(probLines, M, y);
   y += probLines.length * 4.5 + 2;
 
   write('Objectif general', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const objLines = doc.splitTextToSize(form.objectifGeneral || '-', CW);
-  doc.text(t(objLines.join(' ')), M, y);
+  writeLines(objLines, M, y);
   y += objLines.length * 4.5 + 2;
 
   write('Objectifs specifiques', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const objSpeLines = doc.splitTextToSize(form.objectifsSpecifiques || '-', CW);
-  doc.text(t(objSpeLines.join(' ')), M, y);
+  writeLines(objSpeLines, M, y);
   y += objSpeLines.length * 4.5 + 2;
 
   write('Resultats attendus', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const resLines = doc.splitTextToSize(form.resultatsAttendus || '-', CW);
-  doc.text(t(resLines.join(' ')), M, y);
+  writeLines(resLines, M, y);
   y += resLines.length * 4.5 + 2;
 
   write('Beneficiaires directs', M, y, { size: 9, color: [100, 100, 100] });
@@ -168,19 +177,19 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   write('Methodologie de mise en oeuvre', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const methLines = doc.splitTextToSize(form.methodologie || '-', CW);
-  doc.text(t(methLines.join(' ')), M, y);
+  writeLines(methLines, M, y);
   y += methLines.length * 4.5 + 2;
 
   write("Chronogramme d'execution", M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const chronoLines = doc.splitTextToSize(form.chronogramme || '-', CW);
-  doc.text(t(chronoLines.join(' ')), M, y);
+  writeLines(chronoLines, M, y);
   y += chronoLines.length * 4.5 + 2;
 
   write('Contribution a la Vision Benin 2060', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const visionLines = doc.splitTextToSize(form.lienVision2060 || '-', CW);
-  doc.text(t(visionLines.join(' ')), M, y);
+  writeLines(visionLines, M, y);
   y += visionLines.length * 4.5 + 4;
 
   // ═══════════════════════════════════════
