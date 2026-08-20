@@ -70,107 +70,114 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   // ═══════════════════════════════════════
   // SECTION 1
   // ═══════════════════════════════════════
+  pageBreak(25);
   doc.setFillColor(122, 12, 16);
-  doc.rect(M, y, 3, 7, 'F');
-  write('1. IDENTIFICATION DE DU/DE LA CANDIDAT-E', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
-  y += 10;
+  doc.rect(M, y, CW, 9, 'F');
+  write('1. IDENTIFICATION DE DU/DE LA CANDIDAT-E', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
+  y += 14;
 
   // Ligne 1
-  write('Nom & Prenom :', M, y, { bold: true, color: [31, 78, 121] });
-  write(`${form.nom} ${form.prenom}`, M + 60, y);
-  y += 6;
+  write('Nom & Prenom', M, y, { size: 9, color: [100, 100, 100] });
+  y += 5;
+  write(`${form.nom} ${form.prenom}`, M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write('Telephone :', M, y, { bold: true, color: [31, 78, 121] });
-  write(form.telephone || '-', M + 60, y);
-  y += 6;
+  write('Telephone', M, y, { size: 9, color: [100, 100, 100] });
+  y += 5;
+  write(form.telephone || '-', M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write('E-mail :', M, y, { bold: true, color: [31, 78, 121] });
-  write(form.email || '-', M + 60, y);
-  y += 6;
+  write('E-mail', M, y, { size: 9, color: [100, 100, 100] });
+  y += 5;
+  write(form.email || '-', M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write('Departement :', M, y, { bold: true, color: [31, 78, 121] });
-  write(`${form.departement || '-'} (${form.commune || '-'})`, M + 60, y);
-  y += 6;
+  write('Departement', M, y, { size: 9, color: [100, 100, 100] });
+  y += 5;
+  write(`${form.departement || '-'} (${form.commune || '-'})`, M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write('Domaine :', M, y, { bold: true, color: [31, 78, 121] });
-  write(form.domaines?.join(', ') || '-', M + 60, y);
+  write("Domaine d'intervention", M, y, { size: 9, color: [100, 100, 100] });
+  y += 5;
+  write(form.domaines?.join(', ') || '-', M, y, { bold: true, size: 10 });
   y += 10;
 
   // ═══════════════════════════════════════
   // SECTION 2
   // ═══════════════════════════════════════
+  pageBreak(25);
   doc.setFillColor(122, 12, 16);
-  doc.rect(M, y, 3, 7, 'F');
-  write('2. DESCRIPTION DE LA MINI-ACTIVITE', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
-  y += 10;
+  doc.rect(M, y, CW, 9, 'F');
+  write('2. DESCRIPTION DE LA MINI-ACTIVITE', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
+  y += 14;
 
-  write('Titre du projet', M, y, { bold: true, color: [31, 78, 121] });
+  write('Titre du projet', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const titreLines = doc.splitTextToSize(form.titreProjet || '-', CW);
   doc.text(t(titreLines.join(' ')), M, y);
   y += titreLines.length * 4.5 + 2;
 
-  write('Problematique identifiee', M, y, { bold: true, color: [31, 78, 121] });
+  write('Problematique identifiee', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const probLines = doc.splitTextToSize(form.problematique || '-', CW);
   doc.text(t(probLines.join(' ')), M, y);
   y += probLines.length * 4.5 + 2;
 
-  write('Objectif general', M, y, { bold: true, color: [31, 78, 121] });
+  write('Objectif general', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const objLines = doc.splitTextToSize(form.objectifGeneral || '-', CW);
   doc.text(t(objLines.join(' ')), M, y);
   y += objLines.length * 4.5 + 2;
 
-  write('Objectifs specifiques', M, y, { bold: true, color: [31, 78, 121] });
+  write('Objectifs specifiques', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const objSpeLines = doc.splitTextToSize(form.objectifsSpecifiques || '-', CW);
   doc.text(t(objSpeLines.join(' ')), M, y);
   y += objSpeLines.length * 4.5 + 2;
 
-  write('Resultats attendus', M, y, { bold: true, color: [31, 78, 121] });
+  write('Resultats attendus', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const resLines = doc.splitTextToSize(form.resultatsAttendus || '-', CW);
   doc.text(t(resLines.join(' ')), M, y);
   y += resLines.length * 4.5 + 2;
 
-  write('Beneficiaires directs', M, y, { bold: true, color: [31, 78, 121] });
+  write('Beneficiaires directs', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
-  write(form.beneficiairesDirects || 'Non precise', M, y);
-  y += 6;
+  write(form.beneficiairesDirects || 'Non precise', M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write('Beneficiaires indirects', M, y, { bold: true, color: [31, 78, 121] });
+  write('Beneficiaires indirects', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
-  write(form.beneficiairesIndirects || 'Non precise', M, y);
-  y += 6;
+  write(form.beneficiairesIndirects || 'Non precise', M, y, { bold: true, size: 10 });
+  y += 7;
 
-  write("Zone d'intervention", M, y, { bold: true, color: [31, 78, 121] });
+  write("Zone d'intervention", M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
-  write(form.zoneIntervention || '-', M, y);
+  write(form.zoneIntervention || '-', M, y, { bold: true, size: 10 });
   y += 8;
 
   // ═══════════════════════════════════════
   // SECTION 3
   // ═══════════════════════════════════════
-  pageBreak(50);
+  pageBreak(30);
   doc.setFillColor(122, 12, 16);
-  doc.rect(M, y, 3, 7, 'F');
-  write('3. METHODOLOGIE & ALIGNEMENT VISION BENIN 2060', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
-  y += 10;
+  doc.rect(M, y, CW, 9, 'F');
+  write('3. METHODOLOGIE & ALIGNEMENT VISION BENIN 2060', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
+  y += 14;
 
-  write('Methodologie de mise en oeuvre', M, y, { bold: true, color: [31, 78, 121] });
+  write('Methodologie de mise en oeuvre', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const methLines = doc.splitTextToSize(form.methodologie || '-', CW);
   doc.text(t(methLines.join(' ')), M, y);
   y += methLines.length * 4.5 + 2;
 
-  write("Chronogramme d'execution", M, y, { bold: true, color: [31, 78, 121] });
+  write("Chronogramme d'execution", M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const chronoLines = doc.splitTextToSize(form.chronogramme || '-', CW);
   doc.text(t(chronoLines.join(' ')), M, y);
   y += chronoLines.length * 4.5 + 2;
 
-  write('Contribution a la Vision Benin 2060', M, y, { bold: true, color: [31, 78, 121] });
+  write('Contribution a la Vision Benin 2060', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   const visionLines = doc.splitTextToSize(form.lienVision2060 || '-', CW);
   doc.text(t(visionLines.join(' ')), M, y);
@@ -181,9 +188,9 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   // ═══════════════════════════════════════
   pageBreak(40);
   doc.setFillColor(122, 12, 16);
-  doc.rect(M, y, 3, 7, 'F');
-  write('4. BUDGET INDICATIF DE LA MINI-ACTIVITE', M + 6, y + 5.5, { bold: true, color: [122, 12, 16], size: 10.5 });
-  y += 10;
+  doc.rect(M, y, CW, 9, 'F');
+  write('4. BUDGET INDICATIF DE LA MINI-ACTIVITE', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
+  y += 14;
 
   // Budget header
   pageBreak(20);
