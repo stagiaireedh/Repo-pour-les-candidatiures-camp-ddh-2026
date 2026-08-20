@@ -73,10 +73,11 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
 
     const valueX = fullWidth ? MARGIN : MARGIN + 60;
     const maxWidth = fullWidth ? CONTENT_W : CONTENT_W - 60;
+    const valueY = fullWidth ? y + 5 : y;
 
     const lines = doc.splitTextToSize(value || 'Non renseigné', maxWidth);
     const text = Array.isArray(lines) ? lines : [String(lines)];
-    doc.text(text, valueX, y);
+    doc.text(text, valueX, valueY);
 
     const blockH = Math.max(5, text.length * 4.5);
     y += blockH + 4;
