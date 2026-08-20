@@ -125,11 +125,14 @@ export async function apiLoginAdmin(data: {
 // --- Dossier API Calls ---
 export async function apiGetMyDossier(): Promise<DossierCandidature | null> {
   const token = getStoredToken();
-  if (!token) return null;
+  if (!token) throw new Error('Non connecté.');
   const res = await fetch('/api/candidature/me', {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) return null;
+  // Ne renvoyer null QUE si le serveur confirme l'absence de dossier (200 + dossier: null).
+  // Toute autre erreur (401 session expirée, 500…) doit remonter pour que le client
+  // conserve ses données locales au lieu de les effacer.
+  if (!res.ok) throw new Error(`Erreur serveur (${res.status}). Vos données locales sont conservées.`);
   const data = await res.json();
   return data.dossier;
 }
