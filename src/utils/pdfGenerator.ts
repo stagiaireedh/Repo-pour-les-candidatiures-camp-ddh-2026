@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import { DossierCandidature } from '../types';
 
 const clean = (s: string | undefined | null) => {
   return (s || '').replace(/[^\x00-\x7F]/g, (c) => {
@@ -42,10 +41,10 @@ const PAGE_H = 297;
 const M = 14;
 const CW = PAGE_W - 2 * M;
 
-export function generateSingleDossierPdf(dossier: DossierCandidature): void {
+export function generateSingleDossierPdf(dossier: any): void {
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   const { form, id, statut, dateSoumission } = dossier;
-  const totalBudget = form.budgetItems.reduce((s, i) => s + i.quantite * i.coutUnitaire, 0);
+  const totalBudget = form.budgetItems.reduce((s: number, i: any) => s + i.quantite * i.coutUnitaire, 0);
 
   let y = 0;
 
@@ -147,7 +146,7 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   write('Total', M + 160, y + 5.5, { bold: true, color: [255, 255, 255], size: 9 });
   y += 8;
 
-  form.budgetItems.forEach((item, idx) => {
+  form.budgetItems.forEach((item: any, idx: number) => {
     ensure(1);
     if (idx % 2 === 1) {
       doc.setFillColor(245, 247, 250);
@@ -182,7 +181,7 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   doc.save('CSB_Dossier_' + id + '_' + form.nom.replace(/\s+/g, '_') + '.pdf');
 }
 
-export function generateGlobalListPdf(dossiers: DossierCandidature[]): void {
+export function generateGlobalListPdf(dossiers: any[]): void {
   const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
   const W = 297, H = 210, M = 12, CW = W - 2 * M;
   let y = 0;
@@ -224,7 +223,7 @@ export function generateGlobalListPdf(dossiers: DossierCandidature[]): void {
   cols.forEach(c => write(c.label, c.x, y + 5.5, { bold: true, color: [255, 255, 255], size: 8 }));
   y += 8;
 
-  dossiers.forEach((d, idx) => {
+  dossiers.forEach((d: any, idx: number) => {
     ensure(1);
     if (idx % 2 === 1) {
       doc.setFillColor(245, 247, 250);
@@ -236,7 +235,7 @@ export function generateGlobalListPdf(dossiers: DossierCandidature[]): void {
     const dom = (d.form.domaines?.[0] || '-').split('(')[0].trim().substring(0, 28);
     write(dom, cols[3].x, y + 5, { size: 8 });
     write((d.form.titreProjet || '-').substring(0, 32), cols[4].x, y + 5, { size: 8 });
-    const budget = d.form.budgetItems.reduce((s, b) => s + b.quantite * b.coutUnitaire, 0);
+    const budget = d.form.budgetItems.reduce((s: number, b: any) => s + b.quantite * b.coutUnitaire, 0);
     write(budget.toLocaleString('fr-FR'), cols[5].x, y + 5, { size: 8 });
     if (d.statut === 'soumis') {
       write('SOUMIS', cols[6].x, y + 5, { color: [22, 101, 52], size: 8 });
