@@ -63,13 +63,14 @@ export function generateSingleDossierPdf(dossier: any): void {
     ensure(8);
     write(label, M, y, { bold: true, size: 9, color: [100, 100, 100] });
     y += 5;
-    const lines = wrap(value || '-', 80);
-    for (const line of lines) {
-      ensure(1);
-      write(line, M, y, { size: 10 });
-      y += 5;
-    }
-    y += 3;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    const text = clean(value || '-');
+    const lines = doc.splitTextToSize(text, CW);
+    doc.text(lines, M, y, { maxWidth: CW });
+    const lineCount = Array.isArray(lines) ? lines.length : 1;
+    y += lineCount * 4.5 + 3;
   };
 
   // ═══ HEADER ═══
