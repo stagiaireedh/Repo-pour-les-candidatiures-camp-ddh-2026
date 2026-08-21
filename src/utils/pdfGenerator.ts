@@ -61,7 +61,7 @@ export function generateSingleDossierPdf(dossier: any): void {
 
   const writeField = (label: string, value: string) => {
     ensure(8);
-    write(label, M, y, { bold: true, size: 9, color: [100, 100, 100] });
+    write(label, M, y, { bold: true, size: 9, color: [31, 78, 121] });
     y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
