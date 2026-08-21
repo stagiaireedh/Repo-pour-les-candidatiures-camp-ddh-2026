@@ -1,7 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { DossierCandidature } from '../types';
 
-// Nettoyer le texte pour jsPDF (évite les problèmes d'encodage)
 const t = (s: string | undefined | null) => {
   return (s || '').replace(/[^\x00-\x7F]/g, (c) => {
     const map: Record<string, string> = {
@@ -16,7 +15,7 @@ const t = (s: string | undefined | null) => {
       'Ù': 'U', 'Û': 'U', 'Ü': 'U',
       'Ô': 'O', 'Ö': 'O',
       'Î': 'I', 'Ï': 'I',
-      'Ç': 'C', '\'': "'", '’': "'",
+      'Ç': 'C',
     };
     return map[c] || c;
   });
@@ -24,7 +23,6 @@ const t = (s: string | undefined | null) => {
 
 export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-  doc.setLineHeightFactor(1.0);
   const { form, id, statut, dateSoumission } = dossier;
   const totalBudget = form.budgetItems.reduce((s, i) => s + i.quantite * i.coutUnitaire, 0);
 
@@ -35,29 +33,28 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
     if (y + need > H - 15) { doc.addPage(); y = 15; }
   };
 
-  const write = (text: string, x: number, yPos: number, opts?: { bold?: boolean; color?: [number, number, number]; size?: number; align?: 'left' | 'right' }) => {
+  const write = (text: string, x: number, yPos: number, opts?: { bold?: boolean; color?: [number, number, number]; size?: number; align?: 'left' | 'right'; maxWidth?: number }) => {
     doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
     doc.setFontSize(opts?.size || 10);
     doc.setTextColor(...(opts?.color || [40, 40, 40]));
-    doc.text(t(text), x, yPos, { align: opts?.align || 'left' });
+    doc.text(t(text), x, yPos, { align: opts?.align || 'left', maxWidth: opts?.maxWidth });
   };
 
-  const writeLines = (lines: string[], x: number, yPos: number) => {
+  const writeWrapped = (label: string, value: string, x: number, yPos: number) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(t(label), x, yPos);
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(40, 40, 40);
-    const clean = (Array.isArray(lines) ? lines : [String(lines)]).map(l => t(l));
-    doc.text(clean, x, yPos);
+    const lines = doc.splitTextToSize(t(value || '-'), CW);
+    doc.text(Array.isArray(lines) ? lines : [String(lines)], x, yPos + 5);
+    return yPos + 5 + (Array.isArray(lines) ? lines.length : 1) * 4.5 + 2;
   };
 
-  const line = (x1: number, y1: number, x2: number, y2: number) => {
-    doc.setDrawColor(200, 200, 200);
-    doc.line(x1, y1, x2, y2);
-  };
-
-  // ═══════════════════════════════════════
-  // HEADER
-  // ═══════════════════════════════════════
+  // ═══ HEADER ═══
   doc.setFillColor(31, 78, 121);
   doc.rect(0, 0, W, 26, 'F');
   write('CHANGEMENT SOCIAL BENIN (CSB)', M, 10, { bold: true, color: [255, 255, 255], size: 13 });
@@ -68,24 +65,19 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
 
   y = 33;
 
-  // ═══════════════════════════════════════
-  // BANNER
-  // ═══════════════════════════════════════
+  // ═══ BANNER ═══
   doc.setFillColor(235, 243, 251);
   doc.rect(M, y, CW, 10, 'F');
   write('FICHE DE CANDIDATURE - MINI-ACTIVITE DE TERRAIN', M + 4, y + 7, { bold: true, color: [31, 78, 121], size: 11 });
   y += 16;
 
-  // ═══════════════════════════════════════
-  // SECTION 1
-  // ═══════════════════════════════════════
+  // ═══ SECTION 1 ═══
   pageBreak(25);
   doc.setFillColor(122, 12, 16);
   doc.rect(M, y, CW, 9, 'F');
   write('1. IDENTIFICATION DE DU/DE LA CANDIDAT-E', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
   y += 14;
 
-  // Ligne 1
   write('Nom & Prenom', M, y, { size: 9, color: [100, 100, 100] });
   y += 5;
   write(`${form.nom} ${form.prenom}`, M, y, { bold: true, size: 10 });
@@ -111,90 +103,34 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   write(form.domaines?.join(', ') || '-', M, y, { bold: true, size: 10 });
   y += 10;
 
-  // ═══════════════════════════════════════
-  // SECTION 2
-  // ═══════════════════════════════════════
+  // ═══ SECTION 2 ═══
   pageBreak(25);
   doc.setFillColor(122, 12, 16);
   doc.rect(M, y, CW, 9, 'F');
   write('2. DESCRIPTION DE LA MINI-ACTIVITE', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
   y += 14;
 
-  write('Titre du projet', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const titreLines = doc.splitTextToSize(form.titreProjet || '-', CW);
-  writeLines(titreLines, M, y);
-  y += titreLines.length * 4.5 + 2;
+  y = writeWrapped('Titre du projet', form.titreProjet, M, y);
+  y = writeWrapped('Problematique identifiee', form.problematique, M, y);
+  y = writeWrapped('Objectif general', form.objectifGeneral, M, y);
+  y = writeWrapped('Objectifs specifiques', form.objectifsSpecifiques, M, y);
+  y = writeWrapped('Resultats attendus', form.resultatsAttendus, M, y);
+  y = writeWrapped('Beneficiaires directs', form.beneficiairesDirects || 'Non precise', M, y);
+  y = writeWrapped('Beneficiaires indirects', form.beneficiairesIndirects || 'Non precise', M, y);
+  y = writeWrapped("Zone d'intervention", form.zoneIntervention, M, y);
 
-  write('Problematique identifiee', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const probLines = doc.splitTextToSize(form.problematique || '-', CW);
-  writeLines(probLines, M, y);
-  y += probLines.length * 4.5 + 2;
-
-  write('Objectif general', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const objLines = doc.splitTextToSize(form.objectifGeneral || '-', CW);
-  writeLines(objLines, M, y);
-  y += objLines.length * 4.5 + 2;
-
-  write('Objectifs specifiques', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const objSpeLines = doc.splitTextToSize(form.objectifsSpecifiques || '-', CW);
-  writeLines(objSpeLines, M, y);
-  y += objSpeLines.length * 4.5 + 2;
-
-  write('Resultats attendus', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const resLines = doc.splitTextToSize(form.resultatsAttendus || '-', CW);
-  writeLines(resLines, M, y);
-  y += resLines.length * 4.5 + 2;
-
-  write('Beneficiaires directs', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  write(form.beneficiairesDirects || 'Non precise', M, y, { bold: true, size: 10 });
-  y += 7;
-
-  write('Beneficiaires indirects', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  write(form.beneficiairesIndirects || 'Non precise', M, y, { bold: true, size: 10 });
-  y += 7;
-
-  write("Zone d'intervention", M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  write(form.zoneIntervention || '-', M, y, { bold: true, size: 10 });
-  y += 8;
-
-  // ═══════════════════════════════════════
-  // SECTION 3
-  // ═══════════════════════════════════════
+  // ═══ SECTION 3 ═══
   pageBreak(30);
   doc.setFillColor(122, 12, 16);
   doc.rect(M, y, CW, 9, 'F');
   write('3. METHODOLOGIE & ALIGNEMENT VISION BENIN 2060', M + 4, y + 6.5, { bold: true, color: [255, 255, 255], size: 11 });
   y += 14;
 
-  write('Methodologie de mise en oeuvre', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const methLines = doc.splitTextToSize(form.methodologie || '-', CW);
-  writeLines(methLines, M, y);
-  y += methLines.length * 4.5 + 2;
+  y = writeWrapped('Methodologie de mise en oeuvre', form.methodologie, M, y);
+  y = writeWrapped("Chronogramme d'execution", form.chronogramme, M, y);
+  y = writeWrapped('Contribution a la Vision Benin 2060', form.lienVision2060, M, y);
 
-  write("Chronogramme d'execution", M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const chronoLines = doc.splitTextToSize(form.chronogramme || '-', CW);
-  writeLines(chronoLines, M, y);
-  y += chronoLines.length * 4.5 + 2;
-
-  write('Contribution a la Vision Benin 2060', M, y, { size: 9, color: [100, 100, 100] });
-  y += 5;
-  const visionLines = doc.splitTextToSize(form.lienVision2060 || '-', CW);
-  writeLines(visionLines, M, y);
-  y += visionLines.length * 4.5 + 4;
-
-  // ═══════════════════════════════════════
-  // SECTION 4
-  // ═══════════════════════════════════════
+  // ═══ SECTION 4 ═══
   pageBreak(40);
   doc.setFillColor(122, 12, 16);
   doc.rect(M, y, CW, 9, 'F');
@@ -232,11 +168,10 @@ export function generateSingleDossierPdf(dossier: DossierCandidature): void {
   write(`${totalBudget.toLocaleString('fr-FR')} FCFA`, W - M - 6, y + 6.5, { bold: true, color: [255, 255, 255], size: 11, align: 'right' });
   y += 14;
 
-  // ═══════════════════════════════════════
-  // FOOTER
-  // ═══════════════════════════════════════
+  // ═══ FOOTER ═══
   pageBreak(15);
-  line(M, y, W - M, y);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(M, y, W - M, y);
   y += 6;
   write('Document genere via la plateforme Officielle CSB Benin - Camp National Droits Humains 2026.', M, y, { size: 8, color: [100, 100, 100] });
   y += 4;
