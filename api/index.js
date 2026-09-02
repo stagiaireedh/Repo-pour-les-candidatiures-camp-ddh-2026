@@ -586,21 +586,25 @@ async function createApp() {
   });
   app.delete("/api/admin/dossiers/:id", adminMiddleware, async (req, res) => {
     const { id } = req.params;
+    const existed = dossiersDB.has(id);
     const dossier = dossiersDB.get(id);
-    if (!dossier) {
-      return res.status(404).json({ error: "Dossier introuvable." });
-    }
     dossiersDB.delete(id);
-    const userId = dossier.userId;
-    const user = usersDB.get(userId);
-    if (user && user.role === "candidat") {
-      usersDB.delete(userId);
-      for (const [token, uid] of tokensDB) {
-        if (uid === userId) tokensDB.delete(token);
+    if (dossier) {
+      const userId = dossier.userId;
+      const user = usersDB.get(userId);
+      if (user && user.role === "candidat") {
+        usersDB.delete(userId);
+        for (const [token, uid] of tokensDB) {
+          if (uid === userId) tokensDB.delete(token);
+        }
       }
     }
     await persistToStore();
-    res.json({ success: true, message: "Dossier et compte candidat supprim\xE9s. Le candidat devra se recr\xE9er un nouveau compte." });
+    res.json({
+      success: true,
+      existed,
+      message: existed ? "Dossier et compte candidat supprim\xE9s." : "Dossier d\xE9j\xE0 absent (aucun effet)."
+    });
   });
   app.post("/api/admin/reset", adminMiddleware, async (_req, res) => {
     dossiersDB.clear();
