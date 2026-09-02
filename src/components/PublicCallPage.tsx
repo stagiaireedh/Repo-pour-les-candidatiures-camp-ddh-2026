@@ -1,4 +1,5 @@
 import React from 'react';
+import enteteImg from '../assets/entete.png';
 import { 
   Sparkles, 
   Calendar, 
@@ -28,34 +29,9 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
       {/* Hero Poster Banner Section */}
       <section className="relative bg-gradient-to-b from-[#0084B4]/10 via-white to-slate-50 border border-slate-300 rounded-3xl p-5 sm:p-10 shadow-md space-y-6 sm:space-y-8">
         
-        {/* Top Header Row of Poster: CSB Logo & Partners */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1F4E79] to-[#0084B4] text-white flex items-center justify-center font-black text-xl shadow-sm border-2 border-white shrink-0">
-              CSB
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black tracking-tight text-[#0084B4] uppercase">
-                ONG CHANGEMENT SOCIAL BÉNIN
-              </h2>
-              <p className="text-xs text-slate-700 font-semibold">
-                Statut consultatif spécial ECOSOC / ONU • Observateur accrédité CADHP
-              </p>
-            </div>
-          </div>
-
-          {/* Official Partner Logos Box */}
-          <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-300 shadow-xs flex flex-wrap items-center gap-3 text-xs">
-            <span className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Avec le soutien de :</span>
-            <div className="flex items-center gap-2 font-bold text-slate-900">
-              <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300">
-                <span className="text-sm">🇫🇷</span> Ambassade de France
-              </span>
-              <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300">
-                <span className="text-sm">🇧🇪</span> Ambassade de Belgique
-              </span>
-            </div>
-          </div>
+        {/* Entête officielle CSB */}
+        <div className="w-full">
+          <img src={enteteImg} alt="Entête officielle CSB — Appel à Mini-Activités 2026" className="w-full h-auto rounded-xl" />
         </div>
 
         {/* Main Poster Visual Content */}
