@@ -252,7 +252,7 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-[#7A0C10] bg-white px-2.5 py-1 rounded border border-rose-300 inline-block">
               Soumission Mini-Activités
             </span>
-            <p className="text-sm sm:text-base font-black text-[#7A0C10]">14 au 28 Août 2026</p>
+            <p className="text-sm sm:text-base font-black text-[#7A0C10]">07 au 18 Septembre 2026</p>
             <p className="text-xs sm:text-sm text-slate-700 font-medium">Période de 2 semaines post-camp pour la rédaction et le dépôt des propositions de mini-activités sur la plateforme.</p>
           </div>
 
@@ -260,7 +260,7 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-amber-900 bg-white px-2.5 py-1 rounded border border-amber-300 inline-block">
               Présélection Top 10
             </span>
-            <p className="text-sm sm:text-base font-black text-amber-950">1ᵉʳ au 14 Septembre 2026</p>
+            <p className="text-sm sm:text-base font-black text-amber-950">21 au 23 Septembre 2026</p>
             <p className="text-xs sm:text-sm text-slate-700 font-medium">Analyse rigoureuse par le Comité Scientifique de CSB et présélection des 10 meilleures propositions.</p>
           </div>
 
@@ -268,7 +268,7 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-purple-900 bg-white px-2.5 py-1 rounded border border-purple-300 inline-block">
               Grand Oral en Ligne
             </span>
-            <p className="text-sm sm:text-base font-black text-purple-950">15 au 19 Septembre 2026</p>
+            <p className="text-sm sm:text-base font-black text-purple-950">24 au 26 Septembre 2026</p>
             <p className="text-xs sm:text-sm text-slate-700 font-medium">Séance en ligne de présentation orale des 10 projets devant le jury du Comité Scientifique.</p>
           </div>
 
@@ -276,7 +276,7 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-emerald-900 bg-white px-2.5 py-1 rounded border border-emerald-300 inline-block">
               Sélection des 3 Lauréat-e-s
             </span>
-            <p className="text-sm sm:text-base font-black text-emerald-950">22 au 24 Septembre 2026</p>
+            <p className="text-sm sm:text-base font-black text-emerald-950">28 au 30 Septembre 2026</p>
             <p className="text-xs sm:text-sm text-slate-700 font-medium">Délibération finale, annonce officielle et attribution d'un cadre mentor CSB à chaque porteur-se.</p>
           </div>
 
