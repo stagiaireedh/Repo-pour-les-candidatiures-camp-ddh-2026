@@ -41,101 +41,52 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
         </div>
 
         {/* Main Poster Visual Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="space-y-6">
           
-          {/* Left Visual Badge: CAMP 2026 DDH Badge (Matching Poster Visuals) */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center text-center space-y-4">
-            
-            <div className="relative p-6 sm:p-7 bg-white rounded-3xl border-2 border-[#D9232A]/40 shadow-xl w-full max-w-sm">
-              
-              {/* Red "CAMP" block */}
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-4xl sm:text-5xl font-black tracking-wider text-[#D9232A] uppercase">
-                  CAMP
-                </span>
-                
-                {/* Cyan Blue "2026" Inset Pill */}
-                <span className="inline-block px-3 py-1 bg-[#0084B4] text-white font-black text-lg sm:text-xl rounded-xl shadow-sm border-2 border-white">
-                  2026
-                </span>
-              </div>
-
-              {/* Bold High-Contrast "DDH" Badge */}
-              <div className="my-3 py-3 bg-gradient-to-r from-[#D9232A] to-[#7A0C10] text-white rounded-2xl shadow-md">
-                <span className="text-5xl sm:text-6xl font-black tracking-widest block">
-                  DDH
-                </span>
-                <span className="text-xs sm:text-sm text-amber-200 font-extrabold uppercase tracking-wider block mt-1">
-                  Défenseurs des Droits Humains
-                </span>
-              </div>
-
-              {/* Cyan Solid Pill: 3ÈME ÉDITION */}
-              <div className="inline-block bg-[#0084B4] text-white font-black text-xs sm:text-sm uppercase tracking-widest px-6 py-2 rounded-full shadow-sm border border-white">
-                3ᵉ ÉDITION NATIONALE
-              </div>
-
-            </div>
-
-            {/* Official Date Badge Card (Matching Poster 2) */}
-            <div className="w-full max-w-sm bg-[#1F4E79] text-white p-3.5 rounded-2xl shadow-md flex items-center justify-between border-2 border-white/20">
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-wide text-blue-100">Période du Camp :</span>
-              <span className="bg-white text-[#D9232A] font-black text-xs sm:text-sm px-3.5 py-1 rounded-xl shadow-xs">
-                09 – 15 Août 2026
-              </span>
-            </div>
-
+          {/* Pinned Tag Badge: APPEL À CANDIDATURES */}
+          <div className="inline-flex flex-wrap items-center gap-2.5 bg-[#D9232A] text-white px-4 sm:px-5 py-2.5 rounded-2xl shadow-lg border-2 border-white/40 font-black text-xs sm:text-base tracking-wide uppercase">
+            <span className="w-2.5 h-2.5 bg-amber-300 rounded-full shrink-0"></span>
+            <span>APPEL À CANDIDATURES</span>
+            <span className="bg-white text-[#D9232A] text-xs sm:text-sm font-black px-3 py-0.5 rounded-lg shadow-xs">
+              SDR · SENSIBILISATION · PLAIDOYER DESC
+            </span>
           </div>
 
-          {/* Right Main Text & Callout (Matching Poster 1 & 3) */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            {/* Pinned Tag Badge: APPEL À CANDIDATURES */}
-            <div className="inline-flex flex-wrap items-center gap-2.5 bg-[#D9232A] text-white px-4 sm:px-5 py-2.5 rounded-2xl shadow-lg border-2 border-white/40 font-black text-xs sm:text-base tracking-wide uppercase">
-              <span className="w-2.5 h-2.5 bg-amber-300 rounded-full shrink-0"></span>
-              <span>APPEL À CANDIDATURES</span>
-              <span className="bg-white text-[#D9232A] text-xs sm:text-sm font-black px-3 py-0.5 rounded-lg shadow-xs">
-                SDR · SENSIBILISATION · PLAIDOYER DESC
-              </span>
+          {/* Main Title Card matching Poster Visual Charter — pleine largeur */}
+          <div className="bg-[#1F4E79] text-white p-6 sm:p-7 rounded-2xl shadow-xl space-y-3 border-2 border-cyan-400/50">
+            <div className="inline-block bg-[#D9232A] text-white text-xs sm:text-sm font-black uppercase px-3 py-1 rounded-md tracking-wider border border-white/30">
+              THÈME OFFICIEL DU CAMP 2026
             </div>
 
-            {/* Main Title Card matching Poster Visual Charter */}
-            <div className="bg-[#1F4E79] text-white p-6 sm:p-7 rounded-2xl shadow-xl space-y-3 border-2 border-cyan-400/50">
-              <div className="inline-block bg-[#D9232A] text-white text-xs sm:text-sm font-black uppercase px-3 py-1 rounded-md tracking-wider border border-white/30">
-                THÈME OFFICIEL DU CAMP 2026
-              </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white uppercase leading-snug">
+              LES DESC EN ARRIMAGE AVEC LA VISION BÉNIN 2060 : <br className="hidden sm:inline" />
+              <span className="text-amber-300">THÉORIE, PRATIQUE ET ENSEIGNEMENTS</span>
+            </h1>
+          </div>
 
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white uppercase leading-snug">
-                LES DESC EN ARRIMAGE AVEC LA VISION BÉNIN 2060 : <br className="hidden sm:inline" />
-                <span className="text-amber-300">THÉORIE, PRATIQUE ET ENSEIGNEMENTS</span>
-              </h1>
+          {/* Info Badges Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm font-extrabold text-slate-900">
+            <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-slate-100 border border-slate-300">
+              <Calendar className="w-5 h-5 text-[#0084B4] shrink-0" />
+              <span><strong>Durée :</strong> 05 Jours Intensifs (09 au 15 Août 2026)</span>
             </div>
 
-            {/* Info Badges Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm font-extrabold text-slate-900">
-              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-slate-100 border border-slate-300">
-                <Calendar className="w-5 h-5 text-[#0084B4] shrink-0" />
-                <span><strong>Durée :</strong> 05 Jours Intensifs (09 au 15 Août 2026)</span>
-              </div>
-
-              <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-slate-100 border border-slate-300">
-                <Users className="w-5 h-5 text-[#D9232A] shrink-0" />
-                <span><strong>Cible :</strong> 24 Jeunes des 12 Départements (Parité H/F)</span>
-              </div>
+            <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-slate-100 border border-slate-300">
+              <Users className="w-5 h-5 text-[#D9232A] shrink-0" />
+              <span><strong>Cible :</strong> 24 Jeunes des 12 Départements (Parité H/F)</span>
             </div>
+          </div>
 
-            {/* Call to action button */}
-            <div className="pt-2 flex items-center">
-              <button
-                type="button"
-                onClick={onStartApplication}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#D9232A] hover:bg-[#b51b21] text-white font-black text-sm sm:text-base transition-all shadow-lg flex items-center justify-center gap-2 group cursor-pointer border-2 border-amber-300/60"
-              >
-                <span>DÉPOSER MA CANDIDATURE (MINI-ACTIVITÉ)</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-
+          {/* Call to action button */}
+          <div className="pt-2 flex items-center">
+            <button
+              type="button"
+              onClick={onStartApplication}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#D9232A] hover:bg-[#b51b21] text-white font-black text-sm sm:text-base transition-all shadow-lg flex items-center justify-center gap-2 group cursor-pointer border-2 border-amber-300/60"
+            >
+              <span>DÉPOSER MA CANDIDATURE (MINI-ACTIVITÉ)</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
 
         </div>
