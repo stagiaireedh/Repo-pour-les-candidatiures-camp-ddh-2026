@@ -1,5 +1,6 @@
 import React from 'react';
 import enteteImg from '../assets/entete.png';
+import logoCampImg from '../assets/logo-camp-ddh-2026.png';
 import { 
   Sparkles, 
   Calendar, 
@@ -32,6 +33,11 @@ export const PublicCallPage: React.FC<PublicCallPageProps> = ({
         {/* Entête officielle CSB */}
         <div className="w-full">
           <img src={enteteImg} alt="Entête officielle CSB — Appel à Mini-Activités 2026" className="w-full h-auto rounded-xl" />
+        </div>
+
+        {/* Logo officiel du Camp DDH 2026 */}
+        <div className="w-full flex justify-center">
+          <img src={logoCampImg} alt="Logo officiel Camp DDH 2026 — 3ème édition" className="w-full max-w-md h-auto" />
         </div>
 
         {/* Main Poster Visual Content */}
